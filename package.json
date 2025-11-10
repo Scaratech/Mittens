@@ -1,0 +1,17 @@
+{
+    "name": "@scaratech/mittens",
+    "version": "1.0.0",
+    "description": "Middleware for your Wisp server",
+    "scripts": {
+        "clean": "rimraf dist",
+        "build": "pnpm clean && tsc -p tsconfig.json",
+        "cli": "node dist/cli.js"
+    },
+    "author": "scaratech",
+    "license": "AGPL-3.0-only",
+    "packageManager": "pnpm@10.20.0",
+    "devDependencies": {
+        "rimraf": "^6.1.0",
+        "typescript": "^5.9.3"
+    }
+}

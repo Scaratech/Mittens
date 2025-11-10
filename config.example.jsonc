@@ -1,6 +1,11 @@
 {
     "host": "ws://localhost:3000/wisp/", // Wisp server
+    "bind": { // Server configuration
+        "host": "0.0.0.0", // Interface to bind to
+        "port": 3000 // Port to bind to
+    },
     "logging": { // Logging configuration
+        "enabled": true, // Enable logging
         "log_ip": true, // Log client IP addresses
         "trust_proxy": true, // Trust reverse proxies
         "proxy_header": "X-Forwarded-For", // Header to get client IP from (X-Forwarded-For, X-Real-IP, CF-Connecting-IP)
@@ -17,14 +22,15 @@
     "wispguard": { // Anti-DDoS configuration
     },
     "filtering": { // Filter configuration
+        "enabled": true, // Enable filtering
         "tcp": true, // Allow TCP connections
         "udp": false, // Allow UDP connections
         "tls": true, // Allow TLS encrypted traffic
-        "ports": {
+        "ports": { // Port configuration
             "type": "whitelist", // Port filtering type (whitelist, blacklist)
             "list": [80, 443, [8000, 8100]] // List of ports and/or port ranges
         },
-        "hosts": {
+        "hosts": { // Hosts configuration
             "type": "blacklist", // Host filtering type (whitelist, blacklist)
             "list": ["scaratek.dev", "*.holo.cat"] // List of hostnames (wildcard support)
         },

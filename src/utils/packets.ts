@@ -1,5 +1,4 @@
 import {
-    CLOSE_REASONS,
     PacketType,
     ConnectType,
     CloseReason,
@@ -9,7 +8,7 @@ import {
     ClosePacket,
     PacketPayload,
     Packet
-} from "./types";
+} from "../types";
 
 /** Convert raw Wisp packet to a formatted object */
 function rawToFormatted(raw: Uint8Array): Packet {

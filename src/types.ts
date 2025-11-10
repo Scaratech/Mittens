@@ -30,7 +30,10 @@ enum ConnectType {
     UDP = 0x02
 };
 
-type CloseReason = keyof typeof CLOSE_REASONS.CLIENT_SERVER | keyof typeof CLOSE_REASONS.SERVER | keyof typeof CLOSE_REASONS.CLIENT;
+type CloseReason = 
+    keyof typeof CLOSE_REASONS.CLIENT_SERVER | 
+    keyof typeof CLOSE_REASONS.SERVER | 
+    keyof typeof CLOSE_REASONS.CLIENT;
 
 interface ConnectPacket {
     type: ConnectType;
@@ -58,6 +61,71 @@ interface Packet {
     payload: PacketPayload;
 };
 
+type ProxyHeader = 'X-Forwarded-For' | 'X-Real-IP' | 'CF-Connecting-IP';
+type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | '*';
+type LogType = 'log' | 'json';
+type FilterType = 'whitelist' | 'blacklist';
+
+interface Config {
+    /** Wisp server */
+    host: string;
+    /** Server configuration */
+    bind?: {
+        /** Interface to bind to */
+        host?: string;
+        /** Port to bind to */
+        port: number;
+    };
+    /** Logging configuration */
+    logging: {
+        /** Logging status */
+        enabled: boolean;
+        /** Log client IP addresses */
+        log_ip?: boolean;
+        /** Trust reverse proxies */
+        trust_proxy?: boolean;
+        /** Header to get client IP from */
+        proxy_header?: ProxyHeader;
+        /** Log file format */
+        log_type?: LogType;
+        /** Directory to store log files */
+        log_dir?: string;
+        /** Actions that get logged */
+        log_actions?: LogActions[];
+    };
+    /** Filter configuration */
+    filtering: {
+        /** Filtering status */
+        enabled: boolean;
+        /** Allow TCP connections */
+        tcp?: boolean;
+        /** Allow UDP connections */
+        udp?: boolean;
+        /** Allow TLS encrypted traffic */
+        tls?: boolean;
+        /** Port configuration */
+        ports?: {
+            /** Port filtering type */
+            type: FilterType;
+            /** List of ports and/or port ranges */
+            list: (number | [number, number])[];
+        };
+        /** Hosts configuration */
+        hosts?: {
+            /** Host filtering type */
+            type: FilterType;
+            /** List of hostnames (wildcard support) */
+            list: string[];
+        };
+        /** Direct IP connections */
+        direct_ip?: boolean;
+        /** Private IP connections */
+        private_ip?: boolean;
+        /** Loopback IP connections */
+        loopback_ip?: boolean;
+    };
+};
+
 export {
     CLOSE_REASONS,
     PacketType,
@@ -68,5 +136,10 @@ export {
     ContinuePacket,
     ClosePacket,
     PacketPayload,
-    Packet
+    Packet,
+    ProxyHeader,
+    LogActions,
+    LogType,
+    FilterType,
+    Config
 };

@@ -3,7 +3,7 @@ import {
     formattedToRaw,
     constructFormatted,
     generateStreamId
-} from "../src/utils";
+} from "../src/utils/packets";
 import {
     PacketType,
     ConnectType,

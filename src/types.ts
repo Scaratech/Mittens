@@ -1,0 +1,72 @@
+const CLOSE_REASONS = {
+    CLIENT_SERVER: {
+        0x01: " Reason unspecified or unknown. Returning a more specific reason should be preferred.",
+        0x02: "Voluntary stream closure, which would equate to one side resetting the connection.",
+        0x03: "Unexpected stream closure due to a network error."
+    },
+    SERVER: {
+        0x41: "Stream creation failed due to invalid information. This could be sent if the destination was a reserved address or the port is invalid.",
+        0x42: "Stream creation failed due to an unreachable destination host. This could be sent if the destination is an domain which does not resolve to anything.",
+        0x43: "Stream creation timed out due to the destination server not responding.",
+        0x44: "Stream creation failed due to the destination server refusing the connection.",
+        0x47: "TCP data transfer timed out.",
+        0x48: "Stream destination address/domain is intentionally blocked by the proxy server.",
+        0x49: "Connection throttled by the server."
+    },
+    CLIENT: {
+        0x81: "The client has encountered an unexpected error and is unable to receive any more data."
+    }
+};
+
+enum PacketType {
+    CONNNECT = 0x01,
+    DATA = 0x02,
+    CONTINUE = 0x03,
+    CLOSE = 0x04
+};
+
+enum ConnectType {
+    TCP = 0x01,
+    UDP = 0x02
+};
+
+type CloseReason = keyof typeof CLOSE_REASONS.CLIENT_SERVER | keyof typeof CLOSE_REASONS.SERVER | keyof typeof CLOSE_REASONS.CLIENT;
+
+interface ConnectPacket {
+    type: ConnectType;
+    port: number; // uint16
+    host: string; // UTF-8
+};
+
+interface DataPacket {
+    payload: string; // base64
+};
+
+interface ContinuePacket {
+    remaining: number; // uint32
+};
+
+interface ClosePacket {
+    reason: CloseReason;
+};
+
+type PacketPayload = ConnectPacket | DataPacket | ContinuePacket | ClosePacket;
+
+interface Packet {
+    type: PacketType;
+    streamId: number; // uint32 (little-endian)
+    payload: PacketPayload;
+};
+
+export {
+    CLOSE_REASONS,
+    PacketType,
+    ConnectType,
+    CloseReason,
+    ConnectPacket,
+    DataPacket,
+    ContinuePacket,
+    ClosePacket,
+    PacketPayload,
+    Packet
+};

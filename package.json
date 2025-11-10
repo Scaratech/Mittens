@@ -8,7 +8,8 @@
         "build": "pnpm clean && tsc -p tsconfig.json",
         "cli": "node dist/src/cli.js",
         "test:packets": "node dist/tests/packets.js",
-        "test:config": "node dist/tests/config.js"
+        "test:config": "node dist/tests/config.js",
+        "test:api": "node dist/tests/api.js"
     },
     "author": "scaratech",
     "license": "AGPL-3.0-only",

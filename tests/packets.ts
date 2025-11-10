@@ -19,7 +19,7 @@ console.log("Stream ID:", streamId);
 console.log();
 
 const connectPacket = constructFormatted({
-    type: PacketType.CONNNECT,
+    type: PacketType.CONNECT,
     streamId,
     payload: {
         type: ConnectType.TCP,

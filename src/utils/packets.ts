@@ -23,7 +23,7 @@ function rawToFormatted(raw: Uint8Array): Packet {
     let payload: PacketPayload;
     
     switch (type) {
-        case PacketType.CONNNECT: {
+        case PacketType.CONNECT: {
             if (raw.length < 8) {
                 throw new Error("CONNECT packet too short");
             }
@@ -98,7 +98,7 @@ function formattedToRaw(packet: Packet): Uint8Array {
     let payloadData: Uint8Array;
     
     switch (packet.type) {
-        case PacketType.CONNNECT: {
+        case PacketType.CONNECT: {
             const p = packet.payload as ConnectPacket;
             const hostBytes = new TextEncoder().encode(p.host);
 

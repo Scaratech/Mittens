@@ -1,61 +1,135 @@
-import { 
-    ConnectPacket, 
-    ContinuePacket, 
-    DataPacket, 
-    StreamID, 
-    Packet, 
-    PacketType, 
-    ClosePacket 
+import {
+    Packet,
+    PacketType,
+    Config
 } from "./types.js";
+import { rawToFormatted, formattedToRaw } from "./utils/packets.js";
+import { Buffer } from "node:buffer";
+import { Duplex } from "node:stream";
+import { IncomingMessage } from "node:http";
+import WebSocket, { WebSocketServer } from "ws";
 
-export function onConnection(
-    callback: (ip: string) => void
-) {
 
-}
+type PacketCallback = (packet: Packet) => void | Packet | Promise<void | Packet>;
+type ConnectionCallback = (req: IncomingMessage) => void | Promise<void>;
 
-export function onPacket(
-    callback: (packet: Packet) => void | Packet
-) {
+export class Mittens {
+    private config: Config;
 
-}
+    private connectionCallbacks: ConnectionCallback[] = [];
+    private packetCallbacks: PacketCallback[] = [];
+    private connectCallbacks: PacketCallback[] = [];
+    private dataCallbacks: PacketCallback[] = [];
+    private continueCallbacks: PacketCallback[] = [];
+    private closeCallbacks: PacketCallback[] = [];
 
-export function onConnectPacket(
-    callback: (packet: {
-        type: PacketType.CONNNECT,
-        streamId: StreamID,
-        payload: ConnectPacket
-    }) => void | Packet
-) {
+    constructor(config: Config) { this.config = config; }
 
-}
+    public onConnection(callback: ConnectionCallback) { this.connectionCallbacks.push(callback); }
+    public onPacket(callback: PacketCallback) { this.packetCallbacks.push(callback); }
+    public onConnectPacket(callback: PacketCallback) { this.connectCallbacks.push(callback); }
+    public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
+    public onContinuePacket(callback: PacketCallback) { this.continueCallbacks.push(callback); }
+    public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
-export function onDataPacket(
-    callback: (packet: {
-        type: PacketType.DATA,
-        streamId: StreamID,
-        payload: DataPacket
-    }) => void | Packet
-) {
+    private async processPacket(packet: Packet): Promise<Packet> {
+        let currentPacket = packet;
 
-}
+        for (const callback of this.packetCallbacks) {
+            const result = await callback(currentPacket);
 
-export function onContinuePacket(
-    callback: (packet: {
-        type: PacketType.CONTINUE,
-        streamId: StreamID,
-        payload: ContinuePacket
-    }) => void | Packet
-) {
+            if (result) {
+                currentPacket = result;
+            }
+        }
 
-}
+        let typeCallbacks: PacketCallback[] = [];
 
-export function onClosePacket(
-    callback: (packet: {
-        type: PacketType.CLOSE,
-        streamId: StreamID,
-        payload: ClosePacket
-    }) => void | Packet
-) {
+        switch (currentPacket.type) {
+            case PacketType.CONNECT:
+                typeCallbacks = this.connectCallbacks;
+                break;
+            case PacketType.DATA:
+                typeCallbacks = this.dataCallbacks;
+                break;
+            case PacketType.CONTINUE:
+                typeCallbacks = this.continueCallbacks;
+                break;
+            case PacketType.CLOSE:
+                typeCallbacks = this.closeCallbacks;
+                break;
+        }
 
+        for (const callback of typeCallbacks) {
+            const result = await callback(currentPacket);
+
+            if (result) {
+                currentPacket = result;
+            }
+        }
+
+        return currentPacket;
+    }
+
+    public async routeRequest(
+        req: IncomingMessage,
+        socket: Duplex,
+        head: Buffer
+    ) {
+        for (const callback of this.connectionCallbacks) {
+            await callback(req);
+        }
+
+        const wss = new WebSocketServer({ 
+            noServer: true 
+        });
+        
+        wss.handleUpgrade(req, socket as Duplex, head, (clientWs) => {
+            const wispWs = new WebSocket(this.config.host);
+
+            wispWs.on('error', (err) => {
+                console.error(`[Mittens] Wisp connection error:`, err.message);
+                clientWs.close();
+            });
+
+            wispWs.on('close', () => {
+                clientWs.close();
+            });
+
+            wispWs.on('message', async (msg) => {
+                try {
+                    const packet = rawToFormatted(msg as Buffer);
+                    const processedPacket = await this.processPacket(packet);
+                    const raw = formattedToRaw(processedPacket);
+
+                    clientWs.send(raw);
+                } catch (err) {
+                    console.error(`[Mittens] Error processing Wisp->Client packet:`, (err as Error).message);
+                }
+            });
+
+            clientWs.on('message', async (msg) => {
+                try {
+                    const packet = rawToFormatted(msg as Buffer);
+                    const processedPacket = await this.processPacket(packet);
+                    const raw = formattedToRaw(processedPacket);
+                    
+                    if (wispWs.readyState === WebSocket.OPEN) {
+                        wispWs.send(raw);
+                    }
+                } catch (err) {
+                    console.error(`[Mittens] Error processing Client->Wisp packet:`, (err as Error).message);
+                }
+            });
+
+            clientWs.on('error', (err) => {
+                console.error(`[Mittens] Client connection error:`, err.message);
+                wispWs.close();
+            });
+
+            clientWs.on('close', () => {
+                wispWs.close();
+            });
+        });
+    }
 }

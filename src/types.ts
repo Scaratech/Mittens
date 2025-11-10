@@ -54,10 +54,11 @@ interface ClosePacket {
 };
 
 type PacketPayload = ConnectPacket | DataPacket | ContinuePacket | ClosePacket;
+type StreamID = number; // uint32 (little-endian)
 
 interface Packet {
     type: PacketType;
-    streamId: number; // uint32 (little-endian)
+    streamId: StreamID
     payload: PacketPayload;
 };
 
@@ -136,6 +137,7 @@ export {
     ContinuePacket,
     ClosePacket,
     PacketPayload,
+    StreamID,
     Packet,
     ProxyHeader,
     LogActions,

@@ -8,7 +8,7 @@ import {
     ClosePacket,
     PacketPayload,
     Packet
-} from "../types";
+} from "../types.js";
 
 /** Convert raw Wisp packet to a formatted object */
 function rawToFormatted(raw: Uint8Array): Packet {

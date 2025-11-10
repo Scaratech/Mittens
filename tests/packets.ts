@@ -3,7 +3,7 @@ import {
     formattedToRaw,
     constructFormatted,
     generateStreamId
-} from "../src/utils/packets";
+} from "../src/utils/packets.js";
 import {
     PacketType,
     ConnectType,
@@ -11,7 +11,7 @@ import {
     DataPacket,
     ContinuePacket,
     ClosePacket
-} from "../src/types";
+} from "../src/types.js";
 
 const streamId = generateStreamId();
 

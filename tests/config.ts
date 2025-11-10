@@ -1,5 +1,5 @@
-import type { Config } from "../src/types";
-import { generateConfig } from "../src/utils/config";
+import type { Config } from "../src/types.js";
+import { generateConfig } from "../src/utils/config.js";
 
 const config1: Config = {
     host: "ws://localhost:3000/wisp/", // Wisp server
@@ -93,15 +93,15 @@ const config4 = {
     filtering: {
         enabled: false
     }
-}
+};
 
-console.log(generateConfig(config1));
+console.log(JSON.stringify(generateConfig(config1), null, 2));
 console.log();
 
-console.log(generateConfig(config2));
+console.log(JSON.stringify(generateConfig(config2), null, 2));
 console.log();
 
-console.log(generateConfig(config3));
+console.log(JSON.stringify(generateConfig(config3), null, 2));
 console.log();
 
-console.log(generateConfig(config4));
+console.log(JSON.stringify(generateConfig(config4), null, 2));

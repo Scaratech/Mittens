@@ -1,4 +1,4 @@
-import type { Config } from "../types";
+import type { Config } from "../types.js";
 
 export function generateConfig(config: Config): Config {
     let mergedConfig: Config = {

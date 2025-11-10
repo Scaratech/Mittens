@@ -1,4 +1,5 @@
 {
+    "type": "module",
     "name": "@scaratech/mittens",
     "version": "1.0.0",
     "description": "Middleware for your Wisp server",
@@ -14,7 +15,11 @@
     "packageManager": "pnpm@10.20.0",
     "devDependencies": {
         "@types/node": "^24.10.0",
+        "@types/ws": "^8.18.1",
         "rimraf": "^6.1.0",
         "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "ws": "^8.18.3"
     }
 }

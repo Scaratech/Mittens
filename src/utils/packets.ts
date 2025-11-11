@@ -17,8 +17,25 @@ import {
     ServerMOTDMetadata,
     StreamOpenConfirmationMetadata,
     PacketPayload,
-    Packet
+    Packet,
+    SignatureAlgorithm
 } from "../types.js";
+
+const SIGNATURE_LENGTHS: Record<number, number> = {
+    [SignatureAlgorithm.ED25519]: 64
+};
+
+function getExpectedSignatureLength(selectedAlgorithm: number): number | null {
+    if (selectedAlgorithm === 0) {
+        return null;
+    }
+
+    if ((selectedAlgorithm & (selectedAlgorithm - 1)) !== 0) {
+        return null;
+    }
+
+    return SIGNATURE_LENGTHS[selectedAlgorithm] ?? null;
+}
 
 export function parseExtensions(raw: Uint8Array): ExtensionMetadata[] {
     const extensions: ExtensionMetadata[] = [];
@@ -75,35 +92,46 @@ export function parseExtensions(raw: Uint8Array): ExtensionMetadata[] {
             }
 
             case ExtensionID.KEY_AUTH: {
-                if (payloadLength >= 2 && payloadBytes.length >= 2) {
-                    const firstByte = payloadView.getUint8(0);
-                    const secondByte = payloadView.getUint8(1);
-                    
-                    if (payloadLength > 34) {
-                        const selectedAlgorithm = firstByte;
-                        const publicKeyHash = Buffer.from(payloadBytes.slice(1, 33)).toString('hex');
-                        const challengeSignature = Buffer.from(payloadBytes.slice(33)).toString('hex');
+                if (payloadLength < 2 || payloadBytes.length < 2) {
+                    break;
+                }
 
-                        extensions.push({
-                            id: ExtensionID.KEY_AUTH,
-                            payloadLength,
-                            selectedAlgorithm,
-                            publicKeyHash,
-                            challengeSignature
-                        } as KeyAuthSentMetadata);
-                    } else {
-                        const required = firstByte !== 0;
-                        const supportedAlgorithms = secondByte;
-                        const challengeData = Buffer.from(payloadBytes.slice(2)).toString('hex');
+                const requiredOrAlgorithm = payloadView.getUint8(0);
+                const secondByte = payloadView.getUint8(1);
 
-                        extensions.push({
-                            id: ExtensionID.KEY_AUTH,
-                            payloadLength,
-                            required,
-                            supportedAlgorithms,
-                            challengeData
-                        } as KeyAuthRecievedMetadata);
-                    }
+                const publicKeyHashBytes = payloadBytes.slice(1, 33);
+                const signatureBytes = payloadBytes.slice(33);
+
+                const expectedSignatureLength = getExpectedSignatureLength(requiredOrAlgorithm);
+                const looksLikeClientPayload =
+                    publicKeyHashBytes.length === 32 &&
+                    expectedSignatureLength !== null &&
+                    signatureBytes.length === expectedSignatureLength;
+
+                if (looksLikeClientPayload) {
+                    const selectedAlgorithm = requiredOrAlgorithm;
+                    const publicKeyHash = Buffer.from(publicKeyHashBytes).toString('hex');
+                    const challengeSignature = Buffer.from(signatureBytes).toString('hex');
+
+                    extensions.push({
+                        id: ExtensionID.KEY_AUTH,
+                        payloadLength,
+                        selectedAlgorithm,
+                        publicKeyHash,
+                        challengeSignature
+                    } as KeyAuthSentMetadata);
+                } else {
+                    const required = requiredOrAlgorithm !== 0;
+                    const supportedAlgorithms = secondByte;
+                    const challengeData = Buffer.from(payloadBytes.slice(2)).toString('hex');
+
+                    extensions.push({
+                        id: ExtensionID.KEY_AUTH,
+                        payloadLength,
+                        required,
+                        supportedAlgorithms,
+                        challengeData
+                    } as KeyAuthRecievedMetadata);
                 }
                 break;
             }

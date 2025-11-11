@@ -663,7 +663,7 @@ export class Logger implements LoggerInstance {
             type: 'challenge_received',
             supportedAlgorithms: algorithms,
             algorithmsBitmask: `0b${algorithms.toString(2).padStart(8, '0')}`,
-            challengeLength: challenge.length
+            challenge
         };
 
         this.log(entry);
@@ -682,8 +682,7 @@ export class Logger implements LoggerInstance {
                 event: 'key_auth_challenge_received',
                 supportedAlgorithms: algorithms,
                 algorithmsBitmask: `0b${algorithms.toString(2).padStart(8, '0')}`,
-                challengeData: challenge,
-                challengeLength: challenge.length
+                challengeData: challenge
             };
 
             this.log(fullEntry);
@@ -704,8 +703,8 @@ export class Logger implements LoggerInstance {
             type: 'response_sent',
             selectedAlgorithm: algorithm,
             algorithmBitmask: `0b${algorithm.toString(2).padStart(8, '0')}`,
-            publicKeyHashLength: publicKeyHash.length,
-            signatureLength: signature.length
+            publicKeyHash,
+            challengeSignature: signature
         };
 
         this.log(entry);

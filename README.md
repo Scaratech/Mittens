@@ -7,7 +7,7 @@ Middleware for your [Wisp](https://github.com/mercuryworkshop/wisp-protocol) ser
 ## Features
 - Logging
 - Filtering (Apply restrictions even if the Wisp server doesn't support them)
-- Anti DDoS (WiP!!! Planned for `v1.2`)
+- Anti DDoS (WiP!!!)
 - Plugins (Configurable middleware)
 
 ## Why Mittens?
@@ -35,9 +35,22 @@ const mit = new Mittens(generateConfig({
 const server = createServer();
 
 // On Mittens connection
-mit.onConnection((req) => {
+mit.onConnection((ip, host, ua, req) => {
     // Demo: Log connecting IPs
-    console.log(`New connection from ${req.socket.remoteAddress}`);
+    console.log(`New connection from ${ip} to ${host} (${ua})`);
+});
+
+
+// On connection filtered
+mit.onBlocked((host, port) => {
+    // Demo: log what got blocked
+    console.log(`Connection to ${host}:${port} was blocked`);
+});
+
+// On Mittens disconnection
+mit.onDisconnection((ip, host, ua, req) => {
+    // Demo: Log disconnecting IPs
+    console.log(`Disconnection from ${ip} on host ${host} using ${ua}`);
 });
 
 // On CONNECT packets
@@ -145,7 +158,6 @@ $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 ### `v1`
 - CLI (seperate package)
 - Publish to NPM
-- Included filtering
 
 ## Credit
 - Mittens is maintained and developed by [me](https://scaratek.dev) and is licensed under the [AGPLv3 license](./LICENSE).

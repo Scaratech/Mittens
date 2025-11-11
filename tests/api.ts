@@ -37,9 +37,21 @@ const mit = new Mittens(generateConfig({
 const server = createServer();
 
 // On Mittens connection
-mit.onConnection((req) => {
+mit.onConnection((ip, host, ua, req) => {
     // Demo: Log connecting IPs
-    console.log(`New connection from ${req.socket.remoteAddress}`);
+    console.log(`New connection from ${ip} to ${host} (${ua})`);
+});
+
+// On Mittens disconnection
+mit.onDisconnection((ip, host, ua, req) => {
+    // Demo: Log disconnecting IPs
+    console.log(`Disconnection from ${ip} on host ${host} using ${ua}`);
+});
+
+// On connection filtered
+mit.onBlocked((host, port) => {
+    // Demo: log what got blocked
+    console.log(`Connection to ${host}:${port} was blocked`);
 });
 
 // On CONNECT packets

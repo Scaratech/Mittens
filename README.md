@@ -42,6 +42,9 @@ const mit = new Mittens(generateConfig({
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets
             "blocked", // Client tried to access something blocked by the filter rules
+            "INFO", // INFO packets
+            "passwordAuth", // Password authentication attempts
+            "keyAuth", // Key authentication attempts
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },

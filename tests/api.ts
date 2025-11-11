@@ -1,3 +1,4 @@
+import type { ConnectPacket } from "../src/types.js";
 import { Mittens } from "../src/api.js";
 import { generateConfig } from '../src/utils/config.js';
 import { readFileSync } from 'node:fs';
@@ -17,12 +18,14 @@ const mit = new Mittens(config);
 const server = createServer();
 
 mit.onConnection(async (req) => {
-    console.log(`[TEST] New connection from ${req.socket.remoteAddress} to host ${config.host}`);
-    console.log(req);
+    console.log(`${req.socket.remoteAddress} -> ${config.host}`);
+});
+
+mit.onConnectPacket(async (packet) => {
+    console.log(`${(packet.payload as ConnectPacket).host}:${(packet.payload as ConnectPacket).port}`);
 });
 
 mit.onPacket(async (packet) => {
-    console.log(`[TEST] Packet received:`);
     console.log(JSON.stringify(packet, null, 2));
 });
 

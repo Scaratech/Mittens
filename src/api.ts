@@ -10,7 +10,7 @@ import { IncomingMessage } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
 
 
-type PacketCallback = (packet: Packet) => void | Packet | Promise<void | Packet>;
+type PacketCallback = (packet: Packet) => void | Promise<void>;
 type ConnectionCallback = (req: IncomingMessage) => void | Promise<void>;
 
 export class Mittens {
@@ -35,14 +35,6 @@ export class Mittens {
     private async processPacket(packet: Packet): Promise<Packet> {
         let currentPacket = packet;
 
-        for (const callback of this.packetCallbacks) {
-            const result = await callback(currentPacket);
-
-            if (result) {
-                currentPacket = result;
-            }
-        }
-
         let typeCallbacks: PacketCallback[] = [];
 
         switch (currentPacket.type) {
@@ -60,13 +52,8 @@ export class Mittens {
                 break;
         }
 
-        for (const callback of typeCallbacks) {
-            const result = await callback(currentPacket);
-
-            if (result) {
-                currentPacket = result;
-            }
-        }
+        for (const callback of typeCallbacks) await callback(currentPacket);
+        for (const callback of this.packetCallbacks) await callback(currentPacket);
 
         return currentPacket;
     }
@@ -76,9 +63,7 @@ export class Mittens {
         socket: Duplex,
         head: Buffer
     ) {
-        for (const callback of this.connectionCallbacks) {
-            await callback(req);
-        }
+        for (const callback of this.connectionCallbacks) await callback(req);
 
         const wss = new WebSocketServer({ 
             noServer: true 
@@ -98,13 +83,9 @@ export class Mittens {
 
             wispWs.on('message', async (msg) => {
                 try {
-                    const packet = rawToFormatted(msg as Buffer);
-                    const processedPacket = await this.processPacket(packet);
-                    const raw = formattedToRaw(processedPacket);
-
-                    clientWs.send(raw);
+                    clientWs.send(msg);
                 } catch (err) {
-                    console.error(`[Mittens] Error processing Wisp->Client packet:`, (err as Error).message);
+                    console.error(`[Mittens] Error forwarding packet (Wisp -> Client):`, (err as Error).message);
                 }
             });
 
@@ -118,7 +99,7 @@ export class Mittens {
                         wispWs.send(raw);
                     }
                 } catch (err) {
-                    console.error(`[Mittens] Error processing Client->Wisp packet:`, (err as Error).message);
+                    console.error(`[Mittens] Error forwarding packet (Client -> Wisp):`, (err as Error).message);
                 }
             });
 

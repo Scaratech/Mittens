@@ -16,8 +16,7 @@
         "build": "pnpm clean && tsc -p tsconfig.json",
         "test:packets": "node dist/tests/packets.js",
         "test:config": "node dist/tests/config.js",
-        "test:api": "node dist/tests/api.js",
-        "publish": "git push -u origin main && pnpm build && pnpm publish --access public"
+        "test:api": "node dist/tests/api.js"
     },
     "files": [
         "dist/src"

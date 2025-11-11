@@ -1,7 +1,7 @@
 {
     "type": "module",
     "name": "@scaratech/mittens",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Middleware for your Wisp server",
     "main": "dist/src/index.js",
     "types": "dist/src/index.d.ts",
@@ -14,10 +14,10 @@
     "scripts": {
         "clean": "rimraf dist",
         "build": "pnpm clean && tsc -p tsconfig.json",
-        "cli": "node dist/src/cli.js",
         "test:packets": "node dist/tests/packets.js",
         "test:config": "node dist/tests/config.js",
-        "test:api": "node dist/tests/api.js"
+        "test:api": "node dist/tests/api.js",
+        "publish": "git push -u origin main && pnpm build && pnpm publish --access public"
     },
     "files": [
         "dist/src"

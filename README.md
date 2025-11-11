@@ -173,10 +173,6 @@ $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 ## Changelog
 - V1 Release!
 
-## TODO
-### `v1`
-- CLI (seperate package)
-
 ## Credit
 - Mittens is maintained and developed by [me](https://scaratek.dev) and is licensed under the [AGPLv3 license](./LICENSE).
 - [`mittens-cli`](https://github.com/scaratech/mittens-cli) was also developed by [me](https://scaratek.dev) and is also licensed under the [AGPLv3 license](./LICENSE).

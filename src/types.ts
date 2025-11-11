@@ -73,7 +73,7 @@ export interface UDPExtensionMetadata extends BaseExtensionMetadata {
 export interface PasswordAuthServerMetadata extends BaseExtensionMetadata {
     id: ExtensionID.PASSWORD_AUTH;
     required: boolean; // uint8
-}
+};
 
 export interface PasswordAuthClientMetadata extends BaseExtensionMetadata {
     id: ExtensionID.PASSWORD_AUTH;

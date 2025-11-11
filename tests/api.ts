@@ -3,6 +3,7 @@ import type {
     DataPacket,
     ContinuePacket,
     ClosePacket,
+    InfoPacket,
 } from "../src/index.js";
 import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js"; 
 import { createServer } from "node:http";
@@ -69,6 +70,49 @@ mit.onBlocked((host, port) => {
 mit.onWispguardBlocked((ip, ua, reason) => {
     // Demo: log what got blocked by wispguard
     console.log(`Wispguard blocked connection from ${ip} (${ua}) due to ${reason}`);
+});
+
+// Wisp V2 - On INFO packet received
+mit.onInfoPacketReceived((packet) => {
+    // Demo: Log server info
+    const payload = packet.payload as InfoPacket;
+    console.log(`Server Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+    console.log(`Server extensions:`, payload.extensions.map(e => e.id));
+    
+    // Check what the server supports
+    console.log(`UDP Supported: ${mit.isUDPSupported()}`);
+    console.log(`Password Auth Required: ${mit.isPasswordAuthRequired()}`);
+    console.log(`Key Auth Required: ${mit.isKeyAuthRequired()}`);
+    console.log(`Stream Open Confirmation Supported: ${mit.isStreamOpenConfirmationSupported()}`);
+    
+    if (mit.isMOTD()) {
+        console.log(`Server MOTD: ${mit.getMOTD()}`);
+    }
+});
+
+// Wisp V2 - On INFO packet sent
+mit.onInfoPacketSent((packet) => {
+    // Demo: Log client info
+    const payload = packet.payload as InfoPacket;
+    console.log(`Client Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+});
+
+// Wisp V2 - On password authentication
+mit.onPasswordAuth((username, password) => {
+    // Demo: Log authentication attempts
+    console.log(`Password auth attempt - Username: ${username}, Password: ${password}`);
+});
+
+// Wisp V2 - On key auth (server)
+mit.onKeyAuthServer((algorithms, challenge) => {
+    // Demo: Log key auth challenge from server
+    console.log(`Key auth challenge received - Algorithms: ${algorithms}, Challenge: ${challenge}`);
+});
+
+// Wisp V2 - On key auth (client)
+mit.onKeyAuthClient((algorithm, publicKeyHash, signature) => {
+    // Demo: Log key auth response from client
+    console.log(`Key auth response - Algorithm: ${algorithm}, Public Key Hash: ${publicKeyHash}`);
 });
 
 // On CONNECT packets

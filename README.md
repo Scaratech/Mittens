@@ -1,7 +1,5 @@
 # Mittens
 Middleware for your [Wisp](https://github.com/mercuryworkshop/wisp-protocol) server.
-> [!WARNING]
-> Currently Mittens only supports Wisp servers on v1.2 or below. v2.0 support is planned for a future update.
 
 ## Features
 - Logging
@@ -15,106 +13,7 @@ Mittens allows developers or sysadmins to easily secure and monitor traffic sent
 Mittens is written in NodeJS. This means performance will unfortunately suffer. While I have not run any benchmarking tools like [WispMark](https://github.com/MercuryWorkshop/wispmark), it is fairly safe to assume that the traffic sent over Mittens will be quite slower then the Wisp server, as NodeJS is *pretty* slow compared to languages like Rust, which, for example, [epoxy](https://github.com/MercuryWorkshop/epoxy-tls/tree/multiplexed/server) uses. 
 
 ## Plugin System
-```ts
-import type { 
-    ConnectPacket,
-    DataPacket,
-    ContinuePacket,
-    ClosePacket
-} from "@scaratech/mittens";
-import { CLOSE_REASONS, Mittens, generateConfig } from "@scaratech/mittens"; 
-import { createServer } from "node:http";
-
-const mit = new Mittens(generateConfig({
-    host: "wss://wisp.mercurywork.shop/",
-    logging: { enabled: false },
-    wispguard: { enabled: false },
-    filtering: { enabled: false }
-}));
-
-const server = createServer();
-
-// On Mittens connection
-mit.onConnection((ip, ua, req) => {
-    // Demo: Log connecting IPs
-    console.log(`New connection from ${ip} (${ua})`);
-});
-
-// On connection filtered
-mit.onBlocked((host, port) => {
-    // Demo: log what got blocked
-    console.log(`Connection to ${host}:${port} was blocked`);
-});
-
-// On wispguard blocked
-mit.onWispguardBlocked((ip, ua, reason) => {
-    // Demo: log wispguard blocks
-    console.log(`Wispguard blocked ${ip} (${ua}) - Reason: ${reason}`);
-});
-
-// On Mittens disconnection
-mit.onDisconnection((ip, ua, req) => {
-    // Demo: Log disconnecting IPs
-    console.log(`Disconnection from ${ip} (${ua})`);
-});
-
-// On CONNECT packets
-mit.onConnectPacket((packet) => {
-    // Demo: Log sites being connected to
-    const payload = packet.payload as ConnectPacket;
-    console.log(`New connection to ${payload.host}:${payload.port}`);
-});
-
-// On DATA packets sent (client -> server)
-mit.onDataPacketSent((packet) => {
-    // Demo: Log traffic sent from client
-    const payload = packet.payload as DataPacket;
-    console.log('Packet data sent (client -> server):');
-    console.log(payload.payload);
-});
-
-// On DATA packets received (server -> client)
-mit.onDataPacketReceived((packet) => {
-    // Demo: Log traffic received from server
-    const payload = packet.payload as DataPacket;
-    console.log('Packet data received (server -> client):');
-    console.log(payload.payload);
-});
-
-// On CONTINUE packets
-mit.onContinuePacket((packet) => {
-    // Demo: Log buffer remaining updates
-    const payload = packet.payload as ContinuePacket;
-    console.log(`Buffer remaining for stream ${packet.streamId}: ${payload.remaining}`);
-});
-
-// On CLOSE packets
-mit.onClosePacket((packet) => {
-    // Demo: Log errors
-    const payload = packet.payload as ClosePacket;
-    const reason = payload.reason;
-    console.log(`Closed with code ${reason} (${CLOSE_REASONS[reason]})`);
-});
-
-// On ALL packets
-mit.onPacket(async (packet) => {
-    // Demo: Log packet
-    console.log('Packet:');
-    console.log(JSON.stringify(packet, null, 2));
-});
-
-server.on('upgrade', (req, socket, head) => {
-    mit.routeRequest(req, socket, head);
-});
-
-server.on('listening', () => {
-    console.log('Listening')
-});
-
-server.listen({
-    port: 3000
-});
-```
+See `tests/api.ts`
 
 ## Configuration
 How to configure Mittens
@@ -143,6 +42,9 @@ const mit = new Mittens(generateConfig({
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets
             "blocked", // Client tried to access something blocked by the filter rules
+            "INFO", // INFO packets
+            "passwordAuth", // Password authentication attempts
+            "keyAuth", // Key authentication attempts
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },
@@ -183,9 +85,6 @@ Easily spin up a Mittens server
 ```sh
 $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 ```
-
-## Changelog
-- V1 Release!
 
 ## Credit
 - Mittens is maintained and developed by [me](https://scaratek.dev) and is licensed under the [AGPLv3 license](./LICENSE).

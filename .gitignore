@@ -2,3 +2,5 @@ node_modules/
 dist/
 config.json
 logs/
+demo_client.js
+demo_server.js

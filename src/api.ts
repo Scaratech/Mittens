@@ -31,7 +31,9 @@ export class Mittens {
     private wispguardBlockedCallbacks: WispguardBlockedCallback[] = [];
     private packetCallbacks: PacketCallback[] = [];
     private connectCallbacks: PacketCallback[] = [];
-    private dataCallbacks: PacketCallback[] = [];
+    private dataPacketSentCallbacks: PacketCallback[] = [];
+    private dataPacketReceivedCallbacks: PacketCallback[] = [];
+    private continueCallbacks: PacketCallback[] = [];
     private closeCallbacks: PacketCallback[] = [];
 
 
@@ -51,13 +53,16 @@ export class Mittens {
     public onWispguardBlocked(callback: WispguardBlockedCallback) { this.wispguardBlockedCallbacks.push(callback); }
     public onPacket(callback: PacketCallback) { this.packetCallbacks.push(callback); }
     public onConnectPacket(callback: PacketCallback) { this.connectCallbacks.push(callback); }
-    public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
+    public onDataPacketSent(callback: PacketCallback) { this.dataPacketSentCallbacks.push(callback); }
+    public onDataPacketReceived(callback: PacketCallback) { this.dataPacketReceivedCallbacks.push(callback); }
+    public onContinuePacket(callback: PacketCallback) { this.continueCallbacks.push(callback); }
     public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
     private async processPacket(
         packet: Packet, 
         req?: IncomingMessage, 
-        rawPacket?: Buffer
+        rawPacket?: Buffer,
+        direction: 'sent' | 'received' = 'sent'
     ): Promise<Packet | null> {
         let currentPacket = packet;
 
@@ -89,7 +94,12 @@ export class Mittens {
                     this.logger.logConnectPacket(currentPacket, req, rawPacket);
                     break;
                 case PacketType.DATA:
-                    this.logger.logDataPacket(currentPacket, req, rawPacket);
+                    this.logger.logDataPacket(currentPacket, req, rawPacket, direction);
+                    break;
+                case PacketType.CONTINUE:
+                    if (this.logger.logContinuePacket) {
+                        this.logger.logContinuePacket(currentPacket, req, rawPacket);
+                    }
                     break;
                 case PacketType.CLOSE:
                     this.logger.logClosePacket(currentPacket, req, rawPacket);
@@ -106,7 +116,10 @@ export class Mittens {
                 typeCallbacks = this.connectCallbacks;
                 break;
             case PacketType.DATA:
-                typeCallbacks = this.dataCallbacks;
+                typeCallbacks = direction === 'sent' ? this.dataPacketSentCallbacks : this.dataPacketReceivedCallbacks;
+                break;
+            case PacketType.CONTINUE:
+                typeCallbacks = this.continueCallbacks;
                 break;
             case PacketType.CLOSE:
                 typeCallbacks = this.closeCallbacks;
@@ -186,6 +199,15 @@ export class Mittens {
 
             wispWs.on('message', async (msg) => {
                 try {
+                    const rawBuffer = msg as Buffer;
+                    const packet = rawToFormatted(rawBuffer);
+                    
+                    if (packet.type === PacketType.DATA) {
+                        await this.processPacket(packet, req, rawBuffer, 'received');
+                    } else if (packet.type === PacketType.CONTINUE) {
+                        await this.processPacket(packet, req, rawBuffer, 'received');
+                    }
+                    
                     clientWs.send(msg);
                 } catch (err) {
                     console.error(`[Mittens] Error forwarding packet (Wisp -> Client):`, (err as Error).message);

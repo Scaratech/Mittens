@@ -66,12 +66,27 @@ mit.onConnectPacket((packet) => {
     console.log(`New connection to ${payload.host}:${payload.port}`);
 });
 
-// On DATA packets
-mit.onDataPacket((packet) => {
-    // Demo: Log traffic
+// On DATA packets sent (client -> server)
+mit.onDataPacketSent((packet) => {
+    // Demo: Log traffic sent from client
     const payload = packet.payload as DataPacket;
-    console.log('Packet data:');
+    console.log('Packet data sent (client -> server):');
     console.log(payload.payload);
+});
+
+// On DATA packets received (server -> client)
+mit.onDataPacketReceived((packet) => {
+    // Demo: Log traffic received from server
+    const payload = packet.payload as DataPacket;
+    console.log('Packet data received (server -> client):');
+    console.log(payload.payload);
+});
+
+// On CONTINUE packets
+mit.onContinuePacket((packet) => {
+    // Demo: Log buffer remaining updates
+    const payload = packet.payload as ContinuePacket;
+    console.log(`Buffer remaining for stream ${packet.streamId}: ${payload.remaining}`);
 });
 
 // On CLOSE packets

@@ -310,7 +310,7 @@ export class Logger implements LoggerInstance {
         }
     }
 
-    public logDataPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): void {
+    public logDataPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer, direction: 'sent' | 'received' = 'sent'): void {
         const payload = packet.payload as any;
         
         const entry: LogEntry = {
@@ -327,6 +327,7 @@ export class Logger implements LoggerInstance {
         const dataLength = base64Data ? Buffer.from(base64Data, 'base64').length : 0;
 
         entry.details = {
+            direction: direction,
             length: dataLength,
             data: base64Data
         };
@@ -346,6 +347,7 @@ export class Logger implements LoggerInstance {
 
             fullEntry.details = {
                 event: 'DATA_packet',
+                direction: direction,
                 packet: {
                     type: PacketType[packet.type],
                     typeCode: packet.type,
@@ -357,6 +359,41 @@ export class Logger implements LoggerInstance {
                     base64: base64Data,
                     decoded: base64Data ? Buffer.from(base64Data, 'base64').toString('utf8', 0, Math.min(dataLength, 1000)) : ''
                 },
+                rawPacket: rawPacket ? {
+                    hex: rawPacket.toString('hex'),
+                    base64: rawPacket.toString('base64'),
+                    length: rawPacket.length,
+                    bytes: Array.from(rawPacket)
+                } : undefined
+            };
+
+            this.log(fullEntry);
+        }
+    }
+
+    public logContinuePacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): void {
+        const payload = packet.payload as any;
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*',
+                streamId: packet.streamId
+            };
+
+            if (req && this.config.logging.log_ip) {
+                fullEntry.ip = getIP(this.config, req);
+            }
+
+            fullEntry.details = {
+                event: 'CONTINUE_packet',
+                packet: {
+                    type: PacketType[packet.type],
+                    typeCode: packet.type,
+                    streamId: packet.streamId,
+                    payload: payload
+                },
+                bufferRemaining: payload.remaining,
                 rawPacket: rawPacket ? {
                     hex: rawPacket.toString('hex'),
                     base64: rawPacket.toString('base64'),

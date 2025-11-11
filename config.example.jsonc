@@ -15,8 +15,8 @@
             "connection", // Connections & disconnections to Wisp server
             "error", // Client & server errors (CLOSE packet)
             "CONNECT", // CONNECT packets
-            "DATA", // DATA packets
-            "*" // Log all traffic and actions (Not formatted for readability)
+            "DATA", // DATA packets (Length and base64 encoded data)
+            "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },
     "wispguard": { // Anti-DDoS configuration

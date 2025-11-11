@@ -109,7 +109,7 @@ const mit = new Mittens(generateConfig({
             "error", // Client & server errors (CLOSE packet)
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets
-            "*" // Log all traffic and actions (Not formatted for readability)
+            "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },
     filtering: { // Filter configuration
@@ -145,24 +145,6 @@ $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 - CLI (seperate package)
 - Publish to NPM
 - Included filtering
-- Included logging
-### `v1.0.1`
-- Include IP, `Host` header, and target Wisp server in `onConnection` callback
-- `onDisconnection` callback
-### `v1.1`
-- [Wisp v2](https://github.com/MercuryWorkshop/wisp-protocol/blob/v2/protocol.md) support
-- `onPasswordAuthentication` callback
-- `onKeyAuthentication` callback
-- `getMOTD`
-- `isUDPSupported`
-### `v1.1.1`
-- Start Wispguard
-    - Whitelist/Blacklist for `Host`s
-    - Whitelist/Blacklist for client connecting IPs
-### `v1.2`
-- Wispguard
-### `v1.3`
-- Middleware for messages sent by the middleware
 
 ## Credit
 - Mittens is maintained and developed by [me](https://scaratek.dev) and is licensed under the [AGPLv3 license](./LICENSE).

@@ -8,7 +8,13 @@ import { createServer } from "node:http";
 
 const mit = new Mittens(generateConfig({
     host: "wss://wisp.mercurywork.shop/",
-    logging: { enabled: false },
+    logging: { 
+        enabled: true,
+        log_ip: true,
+        log_type: 'log',
+        log_dir: './logs',
+        log_actions: ['connection', 'error', 'CONNECT', 'DATA']
+    },
     filtering: { enabled: false }
 }));
 

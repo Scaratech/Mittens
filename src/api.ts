@@ -4,6 +4,7 @@ import {
     Config
 } from "./types.js";
 import { rawToFormatted, formattedToRaw } from "./utils/packets.js";
+import { Logger, createLogger } from "./middleware/logging/index.js";
 import { Buffer } from "node:buffer";
 import { Duplex } from "node:stream";
 import { IncomingMessage } from "node:http";
@@ -15,6 +16,7 @@ type ConnectionCallback = (req: IncomingMessage) => void | Promise<void>;
 
 export class Mittens {
     private config: Config;
+    private logger: Logger | null = null;
 
     private connectionCallbacks: ConnectionCallback[] = [];
     private packetCallbacks: PacketCallback[] = [];
@@ -22,7 +24,13 @@ export class Mittens {
     private dataCallbacks: PacketCallback[] = [];
     private closeCallbacks: PacketCallback[] = [];
 
-    constructor(config: Config) { this.config = config; }
+    constructor(config: Config) {
+        this.config = config;
+
+        if (this.config.logging.enabled) {
+            this.logger = createLogger(this.config);
+        }
+    }
 
     public onConnection(callback: ConnectionCallback) { this.connectionCallbacks.push(callback); }
     public onPacket(callback: PacketCallback) { this.packetCallbacks.push(callback); }
@@ -30,8 +38,24 @@ export class Mittens {
     public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
     public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
-    private async processPacket(packet: Packet): Promise<Packet> {
+    private async processPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): Promise<Packet> {
         let currentPacket = packet;
+
+        if (this.logger) {
+            switch (currentPacket.type) {
+                case PacketType.CONNECT:
+                    this.logger.logConnectPacket(currentPacket, req, rawPacket);
+                    break;
+                case PacketType.DATA:
+                    this.logger.logDataPacket(currentPacket, req, rawPacket);
+                    break;
+                case PacketType.CLOSE:
+                    this.logger.logClosePacket(currentPacket, req, rawPacket);
+                    break;
+            }
+
+            this.logger.logPacket(currentPacket, req, rawPacket);
+        }
 
         let typeCallbacks: PacketCallback[] = [];
 
@@ -58,6 +82,10 @@ export class Mittens {
         socket: Duplex,
         head: Buffer
     ) {
+        if (this.logger) {
+            this.logger.logConnection(req);
+        }
+
         for (const callback of this.connectionCallbacks) await callback(req);
 
         const wss = new WebSocketServer({
@@ -86,8 +114,9 @@ export class Mittens {
 
             clientWs.on('message', async (msg) => {
                 try {
-                    const packet = rawToFormatted(msg as Buffer);
-                    const processedPacket = await this.processPacket(packet);
+                    const rawBuffer = msg as Buffer;
+                    const packet = rawToFormatted(rawBuffer);
+                    const processedPacket = await this.processPacket(packet, req, rawBuffer);
                     const raw = formattedToRaw(processedPacket);
 
                     if (wispWs.readyState === WebSocket.OPEN) {
@@ -104,8 +133,18 @@ export class Mittens {
             });
 
             clientWs.on('close', () => {
+                if (this.logger) {
+                    this.logger.logDisconnection(req);
+                }
+
                 wispWs.close();
             });
         });
+    }
+
+    public async close(): Promise<void> {
+        if (this.logger) {
+            await this.logger.close();
+        }
     }
 }

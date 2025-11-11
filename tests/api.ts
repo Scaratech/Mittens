@@ -9,7 +9,7 @@ import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js";
 import { createServer } from "node:http";
 
 const mit = new Mittens(generateConfig({
-    host: "ws://localhost:5001/ws/",
+    host: "ws://localhost:5000/",
     logging: {
         enabled: true,
         log_ip: true,

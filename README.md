@@ -109,6 +109,7 @@ const mit = new Mittens(generateConfig({
             "error", // Client & server errors (CLOSE packet)
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets
+            "blocked", // Client tried to access something blocked by the filter rules
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },

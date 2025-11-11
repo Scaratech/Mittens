@@ -54,7 +54,7 @@ interface Packet {
 };
 
 type ProxyHeader = 'X-Forwarded-For' | 'X-Real-IP' | 'CF-Connecting-IP';
-type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | '*';
+type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | 'blocked' | '*';
 type LogType = 'log' | 'json';
 type FilterType = 'whitelist' | 'blacklist';
 

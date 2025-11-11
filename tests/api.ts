@@ -11,11 +11,27 @@ const mit = new Mittens(generateConfig({
     logging: { 
         enabled: true,
         log_ip: true,
-        log_type: 'log',
+        log_type: 'json',
         log_dir: './logs',
-        log_actions: ['connection', 'error', 'CONNECT', 'DATA']
+        log_actions: ['connection', 'error', 'CONNECT', 'DATA', 'blocked']
     },
-    filtering: { enabled: false }
+    filtering: { 
+        enabled: true,
+        tcp: true,
+        udp: false,
+        tls: false,
+        ports: {
+            type: 'whitelist',
+            list: [80, 443]
+        },
+        hosts: {
+            type: 'blacklist',
+            list: ['scaratek.dev', '*.synthv.org']
+        },
+        direct_ip: false,
+        private_ip: false,
+        loopback_ip: false, 
+    }
 }));
 
 const server = createServer();

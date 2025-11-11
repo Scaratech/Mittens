@@ -10,5 +10,6 @@ export interface LogEntry {
 
 export interface LoggerInstance {
     log(entry: LogEntry): void;
+    logBlocked?: (packet: any, req?: any, reason?: number, streamId?: number) => void;
     close(): Promise<void>;
 }

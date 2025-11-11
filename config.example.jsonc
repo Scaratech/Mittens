@@ -16,6 +16,7 @@
             "error", // Client & server errors (CLOSE packet)
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets (Length and base64 encoded data)
+            "blocked", // Client tried to access something blocked by the filter rules
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },

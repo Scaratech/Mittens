@@ -424,6 +424,64 @@ export class Logger implements LoggerInstance {
             this.log(fullEntry);
         }
     }
+
+    public logBlocked(packet: ConnectPacket, req?: IncomingMessage, reason?: number, streamId?: number): void {
+        const entry: LogEntry = {
+            timestamp: new Date().toISOString(),
+            action: 'blocked',
+            streamId: streamId ?? (packet ? (packet as any).streamId : undefined)
+        };
+
+        if (req && this.config.logging.log_ip) {
+            entry.ip = getIP(this.config, req);
+        }
+
+        entry.details = {
+            host: packet.host,
+            port: packet.port,
+            type: packet.type === 0x01 ? 'TCP' : 'UDP',
+            reason: reason !== undefined ? `0x${(reason as number).toString(16).padStart(2, '0').toUpperCase()}` : undefined,
+            reasonText: reason !== undefined ? CLOSE_REASONS[reason as any] : undefined
+        };
+
+        this.log(entry);
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*',
+                streamId: entry.streamId
+            };
+
+            if (req && this.config.logging.log_ip) fullEntry.ip = getIP(this.config, req);
+
+            fullEntry.details = {
+                event: 'blocked_connection',
+                packet: {
+                    host: packet.host,
+                    port: packet.port,
+                    type: packet.type === 0x01 ? 'TCP' : 'UDP'
+                },
+                reason: {
+                    code: reason !== undefined ? `0x${(reason as number).toString(16).padStart(2, '0').toUpperCase()}` : undefined,
+                    text: reason !== undefined ? CLOSE_REASONS[reason as any] : undefined,
+                    numeric: reason
+                },
+                request: req ? {
+                    method: req.method,
+                    url: req.url,
+                    httpVersion: req.httpVersion,
+                    headers: req.headers,
+                    remoteAddress: req.socket.remoteAddress,
+                    remotePort: req.socket.remotePort,
+                    localAddress: req.socket.localAddress,
+                    localPort: req.socket.localPort
+                } : undefined
+            };
+
+            this.log(fullEntry);
+        }
+    }
 }
 
 export function createLogger(config: Config): Logger {

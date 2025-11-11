@@ -45,7 +45,7 @@ export function generateConfig(config: Config): Config {
             trust_proxy: config.logging.trust_proxy ?? false,
             log_type: config.logging.log_type ?? 'log',
             log_dir: config.logging.log_dir ?? './logs',
-            log_actions: config.logging.log_actions ?? ['connection', 'error']
+            log_actions: config.logging.log_actions ?? ['connection', 'error', 'blocked']
         };
 
         if (config.logging.proxy_header) {

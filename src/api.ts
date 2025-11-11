@@ -1,10 +1,13 @@
 import {
     Packet,
     PacketType,
-    Config
+    Config,
+    ConnectPacket,
+    ClosePacket
 } from "./types.js";
-import { rawToFormatted, formattedToRaw } from "./utils/packets.js";
+import { rawToFormatted, formattedToRaw, constructFormatted } from "./utils/packets.js";
 import { Logger, createLogger } from "./middleware/logging/index.js";
+import { validateConnection } from "./middleware/filtering/index.js";
 import { Buffer } from "node:buffer";
 import { Duplex } from "node:stream";
 import { IncomingMessage } from "node:http";
@@ -38,8 +41,21 @@ export class Mittens {
     public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
     public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
-    private async processPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): Promise<Packet> {
+    private async processPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): Promise<Packet | null> {
         let currentPacket = packet;
+
+        if (currentPacket.type === PacketType.CONNECT) {
+            const connectPayload = currentPacket.payload as ConnectPacket;
+            const filterResult = validateConnection(connectPayload, this.config);
+
+            if (!filterResult.allowed) {
+                if (this.logger) {
+                    this.logger.logBlocked(connectPayload, req, filterResult.reason as any, currentPacket.streamId);
+                }
+
+                return null;
+            }
+        }
 
         if (this.logger) {
             switch (currentPacket.type) {
@@ -117,6 +133,25 @@ export class Mittens {
                     const rawBuffer = msg as Buffer;
                     const packet = rawToFormatted(rawBuffer);
                     const processedPacket = await this.processPacket(packet, req, rawBuffer);
+
+                    if (processedPacket === null) {
+                        const closePacket = constructFormatted({
+                            type: PacketType.CLOSE,
+                            streamId: packet.streamId,
+                            payload: {
+                                reason: 0x48
+                            } as ClosePacket
+                        });
+
+                        const closeRaw = formattedToRaw(closePacket);
+                        
+                        if (clientWs.readyState === WebSocket.OPEN) {
+                            clientWs.send(closeRaw);
+                        }
+                        
+                        return;
+                    }
+
                     const raw = formattedToRaw(processedPacket);
 
                     if (wispWs.readyState === WebSocket.OPEN) {

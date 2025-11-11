@@ -1,7 +1,7 @@
 {
     "type": "module",
     "name": "@scaratech/mittens",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "Middleware for your Wisp server",
     "main": "dist/src/index.js",
     "types": "dist/src/index.d.ts",

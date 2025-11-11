@@ -17,8 +17,8 @@ import {
     UDPExtensionMetadata,
     PasswordAuthServerMetadata,
     PasswordAuthClientMetadata,
-    KeyAuthServerMetadata,
-    KeyAuthClientMetadata,
+    KeyAuthRecievedMetadata,
+    KeyAuthSentMetadata,
     ServerMOTDMetadata,
     StreamOpenConfirmationMetadata
 } from "../src/types.js";
@@ -125,7 +125,7 @@ const serverInfoPacket = constructFormatted({
                 required: false,
                 supportedAlgorithms: SignatureAlgorithm.ED25519,
                 challengeData: Buffer.from("a".repeat(64), 'utf-8').toString('hex')
-            } as KeyAuthServerMetadata,
+            } as KeyAuthRecievedMetadata,
             {
                 id: ExtensionID.SERVER_MOTD,
                 payloadLength: 13,
@@ -200,7 +200,7 @@ const clientKeyAuthPacket = constructFormatted({
                 selectedAlgorithm: SignatureAlgorithm.ED25519,
                 publicKeyHash: Buffer.from("b".repeat(32), 'utf-8').toString('hex'),
                 challengeSignature: Buffer.from("c".repeat(64), 'utf-8').toString('hex')
-            } as KeyAuthClientMetadata
+            } as KeyAuthSentMetadata
         ]
     } as InfoPacket
 });

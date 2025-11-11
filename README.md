@@ -13,9 +13,7 @@ Mittens allows developers or sysadmins to easily secure and monitor traffic sent
 Mittens is written in NodeJS. This means performance will unfortunately suffer. While I have not run any benchmarking tools like [WispMark](https://github.com/MercuryWorkshop/wispmark), it is fairly safe to assume that the traffic sent over Mittens will be quite slower then the Wisp server, as NodeJS is *pretty* slow compared to languages like Rust, which, for example, [epoxy](https://github.com/MercuryWorkshop/epoxy-tls/tree/multiplexed/server) uses. 
 
 ## Plugin System
-```ts
-// TODO
-```
+See `tests/api.ts`
 
 ## Configuration
 How to configure Mittens

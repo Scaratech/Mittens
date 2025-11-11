@@ -72,49 +72,6 @@ mit.onWispguardBlocked((ip, ua, reason) => {
     console.log(`Wispguard blocked connection from ${ip} (${ua}) due to ${reason}`);
 });
 
-// Wisp V2 - On INFO packet received
-mit.onInfoPacketReceived((packet) => {
-    // Demo: Log server info
-    const payload = packet.payload as InfoPacket;
-    console.log(`Server Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
-    console.log(`Server extensions:`, payload.extensions.map(e => e.id));
-    
-    // Check what the server supports
-    console.log(`UDP Supported: ${mit.isUDPSupported()}`);
-    console.log(`Password Auth Required: ${mit.isPasswordAuthRequired()}`);
-    console.log(`Key Auth Required: ${mit.isKeyAuthRequired()}`);
-    console.log(`Stream Open Confirmation Supported: ${mit.isStreamOpenConfirmationSupported()}`);
-    
-    if (mit.isMOTD()) {
-        console.log(`Server MOTD: ${mit.getMOTD()}`);
-    }
-});
-
-// Wisp V2 - On INFO packet sent
-mit.onInfoPacketSent((packet) => {
-    // Demo: Log client info
-    const payload = packet.payload as InfoPacket;
-    console.log(`Client Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
-});
-
-// Wisp V2 - On password authentication
-mit.onPasswordAuth((username, password) => {
-    // Demo: Log authentication attempts
-    console.log(`Password auth attempt - Username: ${username}, Password: ${password}`);
-});
-
-// Wisp V2 - On key auth (server)
-mit.onKeyAuthServer((algorithms, challenge) => {
-    // Demo: Log key auth challenge from server
-    console.log(`Key auth challenge received - Algorithms: ${algorithms}, Challenge: ${challenge}`);
-});
-
-// Wisp V2 - On key auth (client)
-mit.onKeyAuthClient((algorithm, publicKeyHash, signature) => {
-    // Demo: Log key auth response from client
-    console.log(`Key auth response - Algorithm: ${algorithm}, Public Key Hash: ${publicKeyHash}`);
-});
-
 // On CONNECT packets
 mit.onConnectPacket((packet) => {
     // Demo: Log sites being connected to
@@ -151,6 +108,75 @@ mit.onClosePacket((packet) => {
     const payload = packet.payload as ClosePacket;
     const reason = payload.reason;
     console.log(`Closed with code ${reason} (${CLOSE_REASONS[reason]})`);
+});
+
+// On INFO packet sent
+mit.onInfoPacketSent((packet) => {
+    // Demo: Log some info!
+    const payload = packet.payload as InfoPacket;
+    console.log(`v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+    console.log('Extensions:');
+    payload.extensions.forEach((ext) => {
+        console.log(`- ${ext.id}`);
+    });
+});
+
+// On INFO packet received
+mit.onInfoPacketReceived((packet) => {
+    // Demo: Log some info!
+    const payload = packet.payload as InfoPacket;
+    console.log(`v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+    console.log('Extensions:');
+    payload.extensions.forEach((ext) => {
+        console.log(`- ${ext.id}`);
+    });
+});
+
+// Get Wisp version
+console.log(`Wisp version: ${mit.getVersion()}`);
+
+// Get extensions
+console.log(`Extensions: ${mit.getExtensions()}`);
+
+// Is password auth required
+console.log(`Password auth: ${mit.isPasswordAuthRequired()}`);
+
+// Is key auth required
+console.log(`Key auth: ${mit.isKeyAuthRequired()}`);
+
+// Is UDP supported
+console.log(`UDP supported: ${mit.isUDPSupported()}`);
+
+// Is MOTD extension
+console.log(`MOTD supported: ${mit.isMOTD()}`);
+
+// Get MOTD
+console.log(`MOTD: ${mit.getMOTD()}`);
+
+// Is Stream Open Confirmation supported
+console.log(`Stream Open Confirmation supported: ${mit.isStreamOpenConfirmationSupported()}`);
+
+// On password auth
+mit.onPasswordAuth((username, password) => {
+    // Demo: Log credentials
+    console.log(`Auth: "${username}" | "${password}"`);
+});
+
+// On key auth recieved
+mit.onKeyAuthRecieved((algs, challenge) => {
+    // Demo: Log key auth request
+    console.log('Key Auth Request:');
+    console.log(`Algorithms: ${algs}`);
+    console.log(`Challenge: ${Buffer.from(challenge).toString('base64')}`);
+});
+
+// On key auth sent
+mit.onKeyAuthSent((alg, pubKeyHash, signature) => {
+    // Demo: Log key auth response
+    console.log('Key Auth Response:');
+    console.log(`Algorithm: ${alg}`);
+    console.log(`Public Key Hash: ${Buffer.from(pubKeyHash).toString('base64')}`);
+    console.log(`Signature: ${Buffer.from(signature).toString('base64')}`);
 });
 
 // On ALL packets

@@ -9,8 +9,8 @@ import {
     ExtensionID,
     PasswordAuthServerMetadata,
     PasswordAuthClientMetadata,
-    KeyAuthServerMetadata,
-    KeyAuthClientMetadata,
+    KeyAuthRecievedMetadata,
+    KeyAuthSentMetadata,
     ServerMOTDMetadata
 } from "./types.js";
 import { rawToFormatted, formattedToRaw, constructFormatted } from "./utils/packets.js";
@@ -29,8 +29,8 @@ type ConnectionCallback = (ip: string, ua: string, req: IncomingMessage) => void
 type BlockedCallback = (host: string, port: number) => void | Promise<void>;
 type WispguardBlockedCallback = (ip: string, ua: string, reason: string) => void | Promise<void>;
 type PasswordAuthCallback = (username: string, password: string) => void | Promise<void>;
-type KeyAuthServerCallback = (algorithms: number, challenge: string) => void | Promise<void>;
-type KeyAuthClientCallback = (algorithm: number, publicKeyHash: string, signature: string) => void | Promise<void>;
+type KeyAuthRecievedCallback = (algorithms: number, challenge: string) => void | Promise<void>;
+type KeyAuthSentCallback = (algorithm: number, publicKeyHash: string, signature: string) => void | Promise<void>;
 
 export class Mittens {
     private config: Config;
@@ -49,8 +49,8 @@ export class Mittens {
     private infoPacketSentCallbacks: PacketCallback[] = [];
     private infoPacketReceivedCallbacks: PacketCallback[] = [];
     private passwordAuthCallbacks: PasswordAuthCallback[] = [];
-    private keyAuthServerCallbacks: KeyAuthServerCallback[] = [];
-    private keyAuthClientCallbacks: KeyAuthClientCallback[] = [];
+    private KeyAuthRecievedCallbacks: KeyAuthRecievedCallback[] = [];
+    private KeyAuthSentCallbacks: KeyAuthSentCallback[] = [];
 
     private que: Map<number, Promise<void>> = new Map();
 
@@ -79,8 +79,8 @@ export class Mittens {
     public onInfoPacketSent(callback: PacketCallback) { this.infoPacketSentCallbacks.push(callback); }
     public onInfoPacketReceived(callback: PacketCallback) { this.infoPacketReceivedCallbacks.push(callback); }
     public onPasswordAuth(callback: PasswordAuthCallback) { this.passwordAuthCallbacks.push(callback); }
-    public onKeyAuthServer(callback: KeyAuthServerCallback) { this.keyAuthServerCallbacks.push(callback); }
-    public onKeyAuthClient(callback: KeyAuthClientCallback) { this.keyAuthClientCallbacks.push(callback); }
+    public onKeyAuthRecieved(callback: KeyAuthRecievedCallback) { this.KeyAuthRecievedCallbacks.push(callback); }
+    public onKeyAuthSent(callback: KeyAuthSentCallback) { this.KeyAuthSentCallbacks.push(callback); }
 
     public getVersion(): { major: number; minor: number } | null {
         return this.serverVersion;
@@ -101,7 +101,7 @@ export class Mittens {
     public isKeyAuthRequired(): boolean {
         const keyExt = this.serverExtensions.find(
             ext => ext.id === ExtensionID.KEY_AUTH
-        ) as KeyAuthServerMetadata | undefined;
+        ) as KeyAuthRecievedMetadata | undefined;
 
         return keyExt?.required ?? false;
     }
@@ -175,15 +175,15 @@ export class Mittens {
                         }
                     } else if (ext.id === ExtensionID.KEY_AUTH) {
                         if ('supportedAlgorithms' in ext) {
-                            const keyAuthServer = ext as KeyAuthServerMetadata;
+                            const keyAuthServer = ext as KeyAuthRecievedMetadata;
 
-                            for (const callback of this.keyAuthServerCallbacks) {
+                            for (const callback of this.KeyAuthRecievedCallbacks) {
                                 await callback(keyAuthServer.supportedAlgorithms, keyAuthServer.challengeData);
                             }
                         } else if ('selectedAlgorithm' in ext) {
-                            const keyAuthClient = ext as KeyAuthClientMetadata;
+                            const keyAuthClient = ext as KeyAuthSentMetadata;
 
-                            for (const callback of this.keyAuthClientCallbacks) {
+                            for (const callback of this.KeyAuthSentCallbacks) {
                                 await callback(
                                     keyAuthClient.selectedAlgorithm,
                                     keyAuthClient.publicKeyHash,

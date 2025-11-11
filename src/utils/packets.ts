@@ -12,8 +12,8 @@ import {
     UDPExtensionMetadata,
     PasswordAuthServerMetadata,
     PasswordAuthClientMetadata,
-    KeyAuthServerMetadata,
-    KeyAuthClientMetadata,
+    KeyAuthRecievedMetadata,
+    KeyAuthSentMetadata,
     ServerMOTDMetadata,
     StreamOpenConfirmationMetadata,
     PacketPayload,
@@ -90,7 +90,7 @@ export function parseExtensions(raw: Uint8Array): ExtensionMetadata[] {
                             selectedAlgorithm,
                             publicKeyHash,
                             challengeSignature
-                        } as KeyAuthClientMetadata);
+                        } as KeyAuthSentMetadata);
                     } else {
                         const required = firstByte !== 0;
                         const supportedAlgorithms = secondByte;
@@ -102,7 +102,7 @@ export function parseExtensions(raw: Uint8Array): ExtensionMetadata[] {
                             required,
                             supportedAlgorithms,
                             challengeData
-                        } as KeyAuthServerMetadata);
+                        } as KeyAuthRecievedMetadata);
                     }
                 }
                 break;

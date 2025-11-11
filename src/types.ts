@@ -84,21 +84,21 @@ export interface PasswordAuthClientMetadata extends BaseExtensionMetadata {
 
 export type PasswordAuthMetadata = PasswordAuthServerMetadata | PasswordAuthClientMetadata;
 
-export interface KeyAuthServerMetadata extends BaseExtensionMetadata {
+export interface KeyAuthRecievedMetadata extends BaseExtensionMetadata {
     id: ExtensionID.KEY_AUTH;
     required: boolean; // uint8
     supportedAlgorithms: number; // uint8
     challengeData: string;
 };
 
-export interface KeyAuthClientMetadata extends BaseExtensionMetadata {
+export interface KeyAuthSentMetadata extends BaseExtensionMetadata {
     id: ExtensionID.KEY_AUTH;
     selectedAlgorithm: number; // uint8
     publicKeyHash: string; // char[32] (sha-256)
     challengeSignature: string;
 };
 
-export type KeyAuthMetadata = KeyAuthServerMetadata | KeyAuthClientMetadata;
+export type KeyAuthMetadata = KeyAuthRecievedMetadata | KeyAuthSentMetadata;
 
 export interface ServerMOTDMetadata extends BaseExtensionMetadata {
     id: ExtensionID.SERVER_MOTD;

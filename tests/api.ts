@@ -30,7 +30,6 @@ const mit = new Mittens(generateConfig({
         enabled: true,
         tcp: true,
         udp: false,
-        tls: false,
         ports: {
             type: 'whitelist',
             list: [80, 443]
@@ -48,15 +47,15 @@ const mit = new Mittens(generateConfig({
 const server = createServer();
 
 // On Mittens connection
-mit.onConnection((ip, host, ua, req) => {
+mit.onConnection((ip, ua) => {
     // Demo: Log connecting IPs
-    console.log(`New connection from ${ip} to ${host} (${ua})`);
+    console.log(`New connection from ${ip} (${ua})`);
 });
 
 // On Mittens disconnection
-mit.onDisconnection((ip, host, ua, req) => {
+mit.onDisconnection((ip, ua) => {
     // Demo: Log disconnecting IPs
-    console.log(`Disconnection from ${ip} on host ${host} using ${ua}`);
+    console.log(`Disconnection from ${ip} (${ua})`);
 });
 
 // On connection filtered

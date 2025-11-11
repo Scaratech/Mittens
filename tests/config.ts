@@ -41,7 +41,6 @@ const config1: Config = {
         enabled: true, // Enable filtering
         tcp: true, // Allow TCP connections
         udp: false, // Allow UDP connections
-        tls: true, // Allow TLS encrypted traffic
         ports: { // Port configuration
             type: "whitelist", // Port filtering type (whitelist, blacklist)
             list: [80, 443, [8000, 8100]] // List of ports and/or port ranges
@@ -85,7 +84,6 @@ const config2: Config = {
     filtering: {
         enabled: true,
         tcp: true,
-        tls: true,
         udp: false,
         ports: {
             type: 'whitelist',

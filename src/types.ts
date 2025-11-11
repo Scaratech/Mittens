@@ -109,8 +109,6 @@ interface Config {
         tcp?: boolean;
         /** Allow UDP connections */
         udp?: boolean;
-        /** Allow TLS encrypted traffic */
-        tls?: boolean;
         /** Port configuration */
         ports?: {
             /** Port filtering type */

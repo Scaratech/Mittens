@@ -36,9 +36,9 @@ const mit = new Mittens(generateConfig({
 const server = createServer();
 
 // On Mittens connection
-mit.onConnection((ip, host, ua, req) => {
+mit.onConnection((ip, ua, req) => {
     // Demo: Log connecting IPs
-    console.log(`New connection from ${ip} to ${host} (${ua})`);
+    console.log(`New connection from ${ip} (${ua})`);
 });
 
 // On connection filtered
@@ -48,15 +48,15 @@ mit.onBlocked((host, port) => {
 });
 
 // On wispguard blocked
-mit.onWispguardBlocked((ip, host, ua, reason) => {
+mit.onWispguardBlocked((ip, ua, reason) => {
     // Demo: log wispguard blocks
-    console.log(`Wispguard blocked ${ip} from ${host} (${ua}) - Reason: ${reason}`);
+    console.log(`Wispguard blocked ${ip} (${ua}) - Reason: ${reason}`);
 });
 
 // On Mittens disconnection
-mit.onDisconnection((ip, host, ua, req) => {
+mit.onDisconnection((ip, ua, req) => {
     // Demo: Log disconnecting IPs
-    console.log(`Disconnection from ${ip} on host ${host} using ${ua}`);
+    console.log(`Disconnection from ${ip} (${ua})`);
 });
 
 // On CONNECT packets
@@ -147,7 +147,6 @@ const mit = new Mittens(generateConfig({
         enabled: true, // Enable filtering
         tcp: true, // Allow TCP connections
         udp: false, // Allow UDP connections
-        tls: true, // Allow HTTPS traffic
         ports: {
             type: "whitelist", // Port filtering type (whitelist, blacklist)
             list: [80, 443, [8000, 8100]] // List of ports and/or port ranges

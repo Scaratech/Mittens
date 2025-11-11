@@ -6,8 +6,7 @@ import {
     isPortAllowed,
     isHostAllowed,
     isTCP,
-    isUDP,
-    isTLS
+    isUDP
 } from "./utils.js";
 
 export interface FilterResult {
@@ -16,7 +15,7 @@ export interface FilterResult {
 }
 
 
-export function validateConnection(packet: ConnectPacket, config: Config): FilterResult {
+export async function validateConnection(packet: ConnectPacket, config: Config): Promise<FilterResult> {
     if (!config.filtering.enabled) {
         return { allowed: true };
     }
@@ -31,13 +30,6 @@ export function validateConnection(packet: ConnectPacket, config: Config): Filte
     }
 
     if (isUDP(connectType) && config.filtering.udp === false) {
-        return { 
-            allowed: false, 
-            reason: 0x48
-        };
-    }
-
-    if (config.filtering.tls === false && isTLS(port)) {
         return { 
             allowed: false, 
             reason: 0x48
@@ -66,14 +58,14 @@ export function validateConnection(packet: ConnectPacket, config: Config): Filte
             };
         }
 
-        if (config.filtering.loopback_ip === false && isLoopbackIP(host)) {
+        if (config.filtering.loopback_ip === false && await isLoopbackIP(host)) {
             return { 
                 allowed: false, 
                 reason: 0x48
             };
         }
     } else {
-        if (config.filtering.loopback_ip === false && isLoopbackIP(host)) {
+        if (config.filtering.loopback_ip === false && await isLoopbackIP(host)) {
             return { 
                 allowed: false, 
                 reason: 0x48
@@ -93,7 +85,7 @@ export function validateConnection(packet: ConnectPacket, config: Config): Filte
 
 
 export function createFilter(config: Config) {
-    return (packet: ConnectPacket): FilterResult => {
+    return (packet: ConnectPacket): Promise<FilterResult> => {
         return validateConnection(packet, config);
     };
 }

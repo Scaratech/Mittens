@@ -1,7 +1,7 @@
 {
     "type": "module",
     "name": "@scaratech/mittens",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Middleware for your Wisp server",
     "main": "dist/src/index.js",
     "scripts": {
@@ -25,6 +25,7 @@
         "typescript": "^5.9.3"
     },
     "dependencies": {
-        "ws": "^8.18.3"
+        "ws": "^8.18.3",
+        "ipaddr.js": "^2.0.2"
     }
 }

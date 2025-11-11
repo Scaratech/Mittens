@@ -17,7 +17,7 @@ import WebSocket, { WebSocketServer } from "ws";
 
 
 type PacketCallback = (packet: Packet) => void | Promise<void>;
-type ConnectionCallback = (ip: string, host: string, ua: string, req: IncomingMessage) => void | Promise<void>;
+type ConnectionCallback = (ip: string, ua: string, req: IncomingMessage) => void | Promise<void>;
 type BlockedCallback = (host: string, port: number) => void | Promise<void>;
 type WispguardBlockedCallback = (ip: string, ua: string, reason: string) => void | Promise<void>;
 
@@ -56,7 +56,7 @@ export class Mittens {
 
         if (currentPacket.type === PacketType.CONNECT) {
             const connectPayload = currentPacket.payload as ConnectPacket;
-            const filterResult = validateConnection(connectPayload, this.config);
+            const filterResult = await validateConnection(connectPayload, this.config);
 
             if (!filterResult.allowed) {
                 if (this.logger) {
@@ -150,10 +150,9 @@ export class Mittens {
         }
 
         const ip = this.config.logging.log_ip ? getIP(this.config, req) : '';
-        const host = req.headers.host || 'unknown';
         const ua = req.headers['user-agent'] || 'unknown';
 
-        for (const callback of this.connectionCallbacks) await callback(ip, host, ua, req);
+        for (const callback of this.connectionCallbacks) await callback(ip, ua, req);
 
         const wss = new WebSocketServer({
             noServer: true
@@ -224,7 +223,7 @@ export class Mittens {
                 }
 
                 for (const callback of this.disconnectionCallbacks) {
-                    await callback(ip, host, ua, req);
+                    await callback(ip, ua, req);
                 }
 
                 wispWs.close();

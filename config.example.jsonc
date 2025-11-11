@@ -36,7 +36,6 @@
         "enabled": true, // Enable filtering
         "tcp": true, // Allow TCP connections
         "udp": false, // Allow UDP connections
-        "tls": true, // Allow TLS encrypted traffic
         "ports": { // Port configuration
             "type": "whitelist", // Port filtering type (whitelist, blacklist)
             "list": [80, 443, [8000, 8100]] // List of ports and/or port ranges
@@ -49,4 +48,4 @@
         "private_ip": false, // Allow private IP connections (E.g. 192.168.0.1)
         "loopback_ip": false // Allow loopback IP connections (E.g. localhost, 0.0.0.0, 127.0.0.1, etc.)
     }
-}
+} 

@@ -8,6 +8,7 @@ import {
 import { rawToFormatted, formattedToRaw, constructFormatted } from "./utils/packets.js";
 import { Logger, createLogger } from "./middleware/logging/index.js";
 import { validateConnection } from "./middleware/filtering/index.js";
+import { validateRequest } from "./middleware/wispguard/index.js";
 import { getIP } from "./middleware/logging/utils.js";
 import { Buffer } from "node:buffer";
 import { Duplex } from "node:stream";
@@ -18,6 +19,7 @@ import WebSocket, { WebSocketServer } from "ws";
 type PacketCallback = (packet: Packet) => void | Promise<void>;
 type ConnectionCallback = (ip: string, host: string, ua: string, req: IncomingMessage) => void | Promise<void>;
 type BlockedCallback = (host: string, port: number) => void | Promise<void>;
+type WispguardBlockedCallback = (ip: string, ua: string, reason: string) => void | Promise<void>;
 
 export class Mittens {
     private config: Config;
@@ -26,6 +28,7 @@ export class Mittens {
     private connectionCallbacks: ConnectionCallback[] = [];
     private disconnectionCallbacks: ConnectionCallback[] = [];
     private blockedCallbacks: BlockedCallback[] = [];
+    private wispguardBlockedCallbacks: WispguardBlockedCallback[] = [];
     private packetCallbacks: PacketCallback[] = [];
     private connectCallbacks: PacketCallback[] = [];
     private dataCallbacks: PacketCallback[] = [];
@@ -42,6 +45,7 @@ export class Mittens {
     public onConnection(callback: ConnectionCallback) { this.connectionCallbacks.push(callback); }
     public onDisconnection(callback: ConnectionCallback) { this.disconnectionCallbacks.push(callback); }
     public onBlocked(callback: BlockedCallback) { this.blockedCallbacks.push(callback); }
+    public onWispguardBlocked(callback: WispguardBlockedCallback) { this.wispguardBlockedCallbacks.push(callback); }
     public onPacket(callback: PacketCallback) { this.packetCallbacks.push(callback); }
     public onConnectPacket(callback: PacketCallback) { this.connectCallbacks.push(callback); }
     public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
@@ -108,6 +112,39 @@ export class Mittens {
         socket: Duplex,
         head: Buffer
     ) {
+        const wispguardResult = validateRequest(this.config, req);
+
+        if (!wispguardResult.allowed) {
+            const ip = this.config.logging.log_ip ? getIP(this.config, req) : '';
+            const ua = req.headers['user-agent'] || 'unknown';
+            const reason = wispguardResult.reason || 'unknown';
+
+            if (this.logger) {
+                const entry = {
+                    timestamp: new Date().toISOString(),
+                    action: 'wispguardBlocked' as const,
+                    details: {
+                        event: 'wispguard_blocked',
+                        reason: reason,
+                        userAgent: ua
+                    }
+                };
+
+                if (this.config.logging.log_ip) {
+                    entry['ip'] = ip;
+                }
+
+                this.logger.log(entry);
+            }
+
+            for (const callback of this.wispguardBlockedCallbacks) {
+                await callback(ip, ua, reason);
+            }
+
+            socket.destroy();
+            return;
+        }
+
         if (this.logger) {
             this.logger.logConnection(req);
         }

@@ -17,10 +17,20 @@
             "CONNECT", // CONNECT packets
             "DATA", // DATA packets (Length and base64 encoded data)
             "blocked", // Client tried to access something blocked by the filter rules
+            "wispguardBlocked", // Client blocked by wispguard (IP, UA, or Host)
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },
-    "wispguard": { // Anti-DDoS configuration
+    "wispguard": { // Wispguard configuration
+        "enabled": true, // Enable wispguard
+        "ip": { // IP configuration
+            "type": "blacklist", // IP filtering type (whitelist, blacklist)
+            "list": [] // List of IPs
+        },
+        "ua": { // User-Agent configuration
+            "type": "blacklist", // UA filtering type (whitelist, blacklist)
+            "list": [] // List of user agents
+        }
     },
     "filtering": { // Filter configuration
         "enabled": true, // Enable filtering

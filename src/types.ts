@@ -54,7 +54,7 @@ interface Packet {
 };
 
 type ProxyHeader = 'X-Forwarded-For' | 'X-Real-IP' | 'CF-Connecting-IP';
-type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | 'blocked' | '*';
+type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | 'blocked' | 'wispguardBlocked' | '*';
 type LogType = 'log' | 'json';
 type FilterType = 'whitelist' | 'blacklist';
 
@@ -85,6 +85,22 @@ interface Config {
         /** Actions that get logged */
         log_actions?: LogActions[];
     };
+    /** Wispguard configuration */
+    wispguard: {
+        enabled: boolean;
+        ip?: {
+            type: FilterType;
+            list: string[];
+        };
+        ua?: {
+            type: FilterType;
+            list: string[];
+        };
+        host?: {
+            type: FilterType;
+            list: string[];
+        }
+    }
     /** Filter configuration */
     filtering: {
         /** Filtering status */

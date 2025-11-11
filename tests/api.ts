@@ -13,7 +13,18 @@ const mit = new Mittens(generateConfig({
         log_ip: true,
         log_type: 'json',
         log_dir: './logs',
-        log_actions: ['connection', 'error', 'CONNECT', 'DATA', 'blocked']
+        log_actions: ['connection', 'error', 'CONNECT', 'DATA', 'blocked', 'wispguardBlocked']
+    },
+    wispguard: {
+        enabled: true,
+        ip: {
+            type: 'whitelist',
+            list: ['::ffff:127.0.0.1']
+        },
+        ua: {
+            type: 'whitelist',
+            list: ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36']
+        }
     },
     filtering: { 
         enabled: true,
@@ -52,6 +63,12 @@ mit.onDisconnection((ip, host, ua, req) => {
 mit.onBlocked((host, port) => {
     // Demo: log what got blocked
     console.log(`Connection to ${host}:${port} was blocked`);
+});
+
+// On Wispguard blocked
+mit.onWispguardBlocked((ip, ua, reason) => {
+    // Demo: log what got blocked by wispguard
+    console.log(`Wispguard blocked connection from ${ip} (${ua}) due to ${reason}`);
 });
 
 // On CONNECT packets

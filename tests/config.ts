@@ -22,6 +22,21 @@ const config1: Config = {
             "*" // Log all traffic and actions (Not formatted for readability)
         ]
     },
+    wispguard: {
+        enabled: true,
+        ip: {
+            type: 'whitelist',
+            list: ['::ffff:127.0.0.1']
+        },
+        ua: {
+            type: 'whitelist',
+            list: ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36']
+        },
+        host: {
+            type: 'whitelist',
+            list: ['0.0.0.0:8080']
+        }
+    },
     filtering: { // Filter configuration
         enabled: true, // Enable filtering
         tcp: true, // Allow TCP connections
@@ -52,6 +67,21 @@ const config2: Config = {
         log_dir: './logs',
         log_actions: ['*']
     },
+    wispguard: {
+        enabled: true,
+        ip: {
+            type: 'blacklist',
+            list: ['152.53.90.161']
+        },
+        ua: {
+            type: 'blacklist',
+            list: ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36']
+        },
+        host: {
+            type: 'whitelist',
+            list: ['nebulaservices.org']
+        }
+    },
     filtering: {
         enabled: true,
         tcp: true,
@@ -76,18 +106,24 @@ const config3: Config = {
     logging: {
         enabled: true
     },
+    wispguard: {
+        enabled: true
+    },
     filtering: {
         enabled: true
     }
 };
 
-const config4 = {
+const config4: Config = {
     host: 'ws://localhost:3000/wisp/',
     bind: {
         host: '0.0.0.0',
         port: 3000
     },
     logging: {
+        enabled: false
+    },
+    wispguard: {
         enabled: false
     },
     filtering: {

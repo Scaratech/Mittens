@@ -5,3 +5,7 @@ export * from './api.js';
 export * from './middleware/logging/index.js';
 export * from './middleware/logging/types.js';
 export * from './middleware/logging/utils.js';
+export * from './middleware/filtering/index.js';
+export * from './middleware/filtering/utils.js';
+export * from './middleware/wispguard/index.js';
+export * from './middleware/wispguard/utils.js';

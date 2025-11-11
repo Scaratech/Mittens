@@ -40,11 +40,16 @@ mit.onConnection((ip, host, ua, req) => {
     console.log(`New connection from ${ip} to ${host} (${ua})`);
 });
 
-
 // On connection filtered
 mit.onBlocked((host, port) => {
     // Demo: log what got blocked
     console.log(`Connection to ${host}:${port} was blocked`);
+});
+
+// On wispguard blocked
+mit.onWispguardBlocked((ip, host, ua, reason) => {
+    // Demo: log wispguard blocks
+    console.log(`Wispguard blocked ${ip} from ${host} (${ua}) - Reason: ${reason}`);
 });
 
 // On Mittens disconnection
@@ -125,6 +130,17 @@ const mit = new Mittens(generateConfig({
             "blocked", // Client tried to access something blocked by the filter rules
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
+    },
+    wispguard: { // Wispguard configuration
+        enabled: true, // Enable wispguard
+        ip: { // IP configuration
+            type: 'whitelist', // IP filtering type (whitelist, blackist)
+            list: ['::ffff:127.0.0.1'] // List of IPs
+        },
+        ua: { // UA (user agent) configuration
+            type: 'whitelist', // UA filtering type (whitelist, blacklist)
+            list: ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'] // List of UAs
+        }
     },
     filtering: { // Filter configuration
         enabled: true, // Enable filtering

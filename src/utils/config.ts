@@ -12,6 +12,17 @@ export function generateConfig(config: Config): Config {
             log_dir: './logs',
             log_actions: []
         },
+        wispguard: {
+            enabled: true,
+            ip: {
+                type: 'blacklist',
+                list: []
+            },
+            ua: {
+                type: 'blacklist',
+                list: []
+            }
+        },
         filtering: {
             enabled: true,
             tcp: true,
@@ -72,6 +83,26 @@ export function generateConfig(config: Config): Config {
             hosts: config.filtering.hosts ? {
                 type: config.filtering.hosts.type,
                 list: config.filtering.hosts.list
+            } : {
+                type: 'blacklist',
+                list: []
+            }
+        };
+    }
+
+    if (config.wispguard && config.wispguard.enabled === true) {
+        mergedConfig.wispguard = {
+            enabled: true,
+            ip: config.wispguard.ip ? {
+                type: config.wispguard.ip.type,
+                list: config.wispguard.ip.list
+            } : {
+                type: 'blacklist',
+                list: []
+            },
+            ua: config.wispguard.ua ? {
+                type: config.wispguard.ua.type,
+                list: config.wispguard.ua.list
             } : {
                 type: 'blacklist',
                 list: []

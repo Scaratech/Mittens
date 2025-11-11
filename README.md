@@ -2,7 +2,6 @@
 Middleware for your [Wisp](https://github.com/mercuryworkshop/wisp-protocol) server.
 > [!WARNING]
 > Currently Mittens only supports Wisp servers on v1.2 or below. v2.0 support is planned for a future update.
-> In addition, (as of now), Mittens can only apply middleware to messages sent by the client, not the server.
 
 ## Features
 - Logging

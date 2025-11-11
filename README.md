@@ -1,8 +1,5 @@
 # Mittens
 Middleware for your [Wisp](https://github.com/mercuryworkshop/wisp-protocol) server.
-> [!WARNING]
-> Currently Mittens only supports Wisp servers on v1.2 or below. v2.0 support is planned for a future update.
-> In addition, (as of now), Mittens can only apply middleware to messages sent by the client, not the server.
 
 ## Features
 - Logging
@@ -21,7 +18,8 @@ import type {
     ConnectPacket,
     DataPacket,
     ContinuePacket,
-    ClosePacket
+    ClosePacket,
+    InfoPacket
 } from "@scaratech/mittens";
 import { CLOSE_REASONS, Mittens, generateConfig } from "@scaratech/mittens"; 
 import { createServer } from "node:http";
@@ -184,9 +182,6 @@ Easily spin up a Mittens server
 ```sh
 $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 ```
-
-## Changelog
-- V1 Release!
 
 ## Credit
 - Mittens is maintained and developed by [me](https://scaratek.dev) and is licensed under the [AGPLv3 license](./LICENSE).

@@ -65,10 +65,10 @@ export class Mittens {
     ) {
         for (const callback of this.connectionCallbacks) await callback(req);
 
-        const wss = new WebSocketServer({ 
-            noServer: true 
+        const wss = new WebSocketServer({
+            noServer: true
         });
-        
+
         wss.handleUpgrade(req, socket as Duplex, head, (clientWs) => {
             const wispWs = new WebSocket(this.config.host);
 
@@ -94,7 +94,7 @@ export class Mittens {
                     const packet = rawToFormatted(msg as Buffer);
                     const processedPacket = await this.processPacket(packet);
                     const raw = formattedToRaw(processedPacket);
-                    
+
                     if (wispWs.readyState === WebSocket.OPEN) {
                         wispWs.send(raw);
                     }

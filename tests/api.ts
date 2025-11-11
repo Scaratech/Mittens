@@ -1,31 +1,60 @@
-import type { ConnectPacket } from "../src/types.js";
-import { Mittens } from "../src/api.js";
-import { generateConfig } from '../src/utils/config.js';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import type { 
+    ConnectPacket,
+    DataPacket,
+    ContinuePacket,
+    ClosePacket,
+} from "../src/index.js";
+import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js"; 
 import { createServer } from "node:http";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const mit = new Mittens(generateConfig({
+    host: "wss://wisp.mercurywork.shop/",
+    logging: { enabled: false },
+    filtering: { enabled: false }
+}));
 
-const configPath = path.join(__dirname, '..', '..', 'config.json');
-const config = generateConfig(
-    JSON.parse(readFileSync(configPath, 'utf-8'))
-);
-
-const mit = new Mittens(config);
 const server = createServer();
 
-mit.onConnection(async (req) => {
-    console.log(`${req.socket.remoteAddress} -> ${config.host}`);
+// On Mittens connection
+mit.onConnection((req) => {
+    // Demo: Log connecting IPs
+    console.log(`New connection from ${req.socket.remoteAddress}`);
 });
 
-mit.onConnectPacket(async (packet) => {
-    console.log(`${(packet.payload as ConnectPacket).host}:${(packet.payload as ConnectPacket).port}`);
+// On CONNECT packets
+mit.onConnectPacket((packet) => {
+    // Demo: Log sites being connected to
+    const payload = packet.payload as ConnectPacket;
+    console.log(`New connection to ${payload.host}:${payload.port}`);
 });
 
+// On DATA packets
+mit.onDataPacket((packet) => {
+    // Demo: Log traffic
+    const payload = packet.payload as DataPacket;
+    console.log('Packet data:');
+    console.log(payload.payload);
+});
+
+// On CONTINUE packets
+mit.onContinuePacket((packet) => {
+    // Demo: Log payload
+    const payload = packet.payload as ContinuePacket;
+    console.log(`Remaining: ${payload.remaining}`);
+});
+
+// On CLOSE packets
+mit.onClosePacket((packet) => {
+    // Demo: Log errors
+    const payload = packet.payload as ClosePacket;
+    const reason = payload.reason;
+    console.log(`Closed with code ${reason} (${CLOSE_REASONS[reason]})`);
+});
+
+// On ALL packets
 mit.onPacket(async (packet) => {
+    // Demo: Log packet
+    console.log('Packet:');
     console.log(JSON.stringify(packet, null, 2));
 });
 
@@ -33,8 +62,10 @@ server.on('upgrade', (req, socket, head) => {
     mit.routeRequest(req, socket, head);
 });
 
-server.on('listening', () => console.log('Listening'));
+server.on('listening', () => {
+    console.log('Listening')
+});
 
 server.listen({
-    port: 3000,
+    port: 3000
 });

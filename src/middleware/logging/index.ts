@@ -623,7 +623,7 @@ export class Logger implements LoggerInstance {
 
         entry.details = {
             username: username,
-            passwordLength: password.length
+            password: password
         };
 
         this.log(entry);

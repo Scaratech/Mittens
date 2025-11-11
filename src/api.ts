@@ -166,7 +166,52 @@ export class Mittens {
 
         if (currentPacket.type === PacketType.INFO) {
             const infoPayload = currentPacket.payload as InfoPacket;
-            
+
+            for (const ext of infoPayload.extensions) {
+                if (ext.id === ExtensionID.PASSWORD_AUTH && 'username' in ext) {
+                    const passwordExt = ext as PasswordAuthClientMetadata;
+
+                    if (this.logger) {
+                        this.logger.logPasswordAuth(passwordExt.username, passwordExt.password, req);
+                    }
+
+                    for (const callback of this.passwordAuthCallbacks) {
+                        await callback(passwordExt.username, passwordExt.password);
+                    }
+                } else if (ext.id === ExtensionID.KEY_AUTH) {
+                    if ('supportedAlgorithms' in ext) {
+                        const keyAuthServer = ext as KeyAuthRecievedMetadata;
+
+                        if (this.logger) {
+                            this.logger.logKeyAuthServer(keyAuthServer.supportedAlgorithms, keyAuthServer.challengeData, req);
+                        }
+
+                        for (const callback of this.KeyAuthRecievedCallbacks) {
+                            await callback(keyAuthServer.supportedAlgorithms, keyAuthServer.challengeData);
+                        }
+                    } else if ('selectedAlgorithm' in ext) {
+                        const keyAuthClient = ext as KeyAuthSentMetadata;
+
+                        if (this.logger) {
+                            this.logger.logKeyAuthClient(
+                                keyAuthClient.selectedAlgorithm,
+                                keyAuthClient.publicKeyHash,
+                                keyAuthClient.challengeSignature,
+                                req
+                            );
+                        }
+
+                        for (const callback of this.KeyAuthSentCallbacks) {
+                            await callback(
+                                keyAuthClient.selectedAlgorithm,
+                                keyAuthClient.publicKeyHash,
+                                keyAuthClient.challengeSignature
+                            );
+                        }
+                    }
+                }
+            }
+
             if (direction === 'received') {
                 this.serverVersion = {
                     major: infoPayload.majorWispVersion,
@@ -174,54 +219,8 @@ export class Mittens {
                 };
                 this.serverExtensions = infoPayload.extensions;
 
-                // Log Wisp version
                 if (this.logger) {
                     this.logger.logWispVersion(this.serverVersion, this.serverExtensions, req);
-                }
-
-                for (const ext of infoPayload.extensions) {
-                    if (ext.id === ExtensionID.PASSWORD_AUTH && 'username' in ext) {
-                        const passwordExt = ext as PasswordAuthClientMetadata;
-
-                        if (this.logger) {
-                            this.logger.logPasswordAuth(passwordExt.username, passwordExt.password, req);
-                        }
-
-                        for (const callback of this.passwordAuthCallbacks) {
-                            await callback(passwordExt.username, passwordExt.password);
-                        }
-                    } else if (ext.id === ExtensionID.KEY_AUTH) {
-                        if ('supportedAlgorithms' in ext) {
-                            const keyAuthServer = ext as KeyAuthRecievedMetadata;
-
-                            if (this.logger) {
-                                this.logger.logKeyAuthServer(keyAuthServer.supportedAlgorithms, keyAuthServer.challengeData, req);
-                            }
-
-                            for (const callback of this.KeyAuthRecievedCallbacks) {
-                                await callback(keyAuthServer.supportedAlgorithms, keyAuthServer.challengeData);
-                            }
-                        } else if ('selectedAlgorithm' in ext) {
-                            const keyAuthClient = ext as KeyAuthSentMetadata;
-
-                            if (this.logger) {
-                                this.logger.logKeyAuthClient(
-                                    keyAuthClient.selectedAlgorithm,
-                                    keyAuthClient.publicKeyHash,
-                                    keyAuthClient.challengeSignature,
-                                    req
-                                );
-                            }
-
-                            for (const callback of this.KeyAuthSentCallbacks) {
-                                await callback(
-                                    keyAuthClient.selectedAlgorithm,
-                                    keyAuthClient.publicKeyHash,
-                                    keyAuthClient.challengeSignature
-                                );
-                            }
-                        }
-                    }
                 }
 
                 for (const callback of this.infoPacketReceivedCallbacks) {
@@ -332,14 +331,29 @@ export class Mittens {
             await callback(ip, ua, req);
         }
 
+        // Hell
+        const rawProtocolHeader = req.headers['sec-websocket-protocol'];
+        const requestedProtocolHeader = Array.isArray(rawProtocolHeader)
+            ? rawProtocolHeader.join(',')
+            : rawProtocolHeader;
+        const upstreamProtocolHeader = requestedProtocolHeader && requestedProtocolHeader.trim().length > 0
+            ? requestedProtocolHeader
+            : 'wisp';
+
+        if (requestedProtocolHeader) {
+            delete req.headers['sec-websocket-protocol'];
+        }
+
         const wss = new WebSocketServer({
             noServer: true
         });
 
         wss.handleUpgrade(req, socket as Duplex, head, (clientWs) => {
-            // Forward Sec-WebSocket-Protocol header to enable Wisp V2 on upstream server
-            const protocols = req.headers['sec-websocket-protocol'];
-            const wispWs = new WebSocket(this.config.host, protocols ? protocols.split(',').map(p => p.trim()) : undefined);
+            const wispWs = new WebSocket(this.config.host, undefined, {
+                headers: {
+                    'Sec-WebSocket-Protocol': upstreamProtocolHeader
+                }
+            });
 
             wispWs.on('error', (err) => {
                 console.error(`[Mittens] Wisp connection error:`, err.message);
@@ -364,23 +378,6 @@ export class Mittens {
                         if (packet.type === PacketType.INFO) {
                             this.isWispV2 = true;
                             await this.processPacket(packet, req, rawBuffer, 'received');
-                            
-                            const clientInfoPacket = constructFormatted({
-                                type: PacketType.INFO,
-                                streamId: 0,
-                                payload: {
-                                    majorWispVersion: this.clientVersion.major,
-                                    minorWispVersion: this.clientVersion.minor,
-                                    extensions: []
-                                } as InfoPacket
-                            });
-                            
-                            const clientInfoRaw = formattedToRaw(clientInfoPacket);
-                            await this.processPacket(clientInfoPacket, req, Buffer.from(clientInfoRaw), 'sent');
-                            
-                            if (wispWs.readyState === WebSocket.OPEN) {
-                                wispWs.send(clientInfoRaw);
-                            }
 
                             if (this.serverVersion && this.serverExtensions) {
                                 const wispInfo = new WispInfo(this.serverVersion, this.serverExtensions);
@@ -389,9 +386,6 @@ export class Mittens {
                                     await callback(wispInfo);
                                 }
                             }
-                            
-                            clientWs.send(msg);
-                            return;
                         } else if (packet.type === PacketType.CONTINUE && packet.streamId === 0) {
                             // Wisp V1 fallback 
                             this.isWispV2 = false;

@@ -144,7 +144,10 @@ const mit = new Mittens(generateConfig({
     },
     filtering: { // Filter configuration
         enabled: true, // Enable filtering
-        tcp: true, // Allow TCP connectionsrc/middleware/logging
+        tcp: true, // Allow TCP connections
+        udp: false, // Allow UDP connections
+        tls: true, // Allow HTTPS traffic
+        ports: {
             type: "whitelist", // Port filtering type (whitelist, blacklist)
             list: [80, 443, [8000, 8100]] // List of ports and/or port ranges
         },

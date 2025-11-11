@@ -1,34 +1,26 @@
-import type { 
+import type {
     ConnectPacket,
     DataPacket,
     ContinuePacket,
     ClosePacket,
     InfoPacket,
 } from "../src/index.js";
-import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js"; 
+import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js";
 import { createServer } from "node:http";
 
 const mit = new Mittens(generateConfig({
-    host: "wss://wisp.mercurywork.shop/",
-    logging: { 
+    host: "ws://localhost:5001/ws/",
+    logging: {
         enabled: true,
         log_ip: true,
         log_type: 'json',
         log_dir: './logs',
-        log_actions: ['connection', 'error', 'CONNECT', 'DATA', 'blocked', 'wispguardBlocked']
+        log_actions: ['connection', 'error', 'CONNECT', 'DATA', 'INFO', 'keyAuth', 'passwordAuth', 'blocked', 'wispguardBlocked']
     },
     wispguard: {
-        enabled: true,
-        ip: {
-            type: 'whitelist',
-            list: ['::ffff:127.0.0.1']
-        },
-        ua: {
-            type: 'whitelist',
-            list: ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36']
-        }
+        enabled: false
     },
-    filtering: { 
+    filtering: {
         enabled: true,
         tcp: true,
         udp: false,
@@ -42,7 +34,7 @@ const mit = new Mittens(generateConfig({
         },
         direct_ip: false,
         private_ip: false,
-        loopback_ip: false, 
+        loopback_ip: false,
     }
 }));
 
@@ -114,47 +106,61 @@ mit.onClosePacket((packet) => {
 mit.onInfoPacketSent((packet) => {
     // Demo: Log some info!
     const payload = packet.payload as InfoPacket;
-    console.log(`v${payload.majorWispVersion}.${payload.minorWispVersion}`);
-    console.log('Extensions:');
-    payload.extensions.forEach((ext) => {
-        console.log(`- ${ext.id}`);
-    });
+    console.log(`[Sent] Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+    if (payload.extensions.length > 0) {
+        console.log('Extensions:');
+        payload.extensions.forEach((ext) => {
+            console.log(`- ${ext.id}`);
+        });
+    } else {
+        console.log('Extensions: (none)');
+    }
 });
 
 // On INFO packet received
 mit.onInfoPacketReceived((packet) => {
     // Demo: Log some info!
     const payload = packet.payload as InfoPacket;
-    console.log(`v${payload.majorWispVersion}.${payload.minorWispVersion}`);
-    console.log('Extensions:');
-    payload.extensions.forEach((ext) => {
-        console.log(`- ${ext.id}`);
-    });
+    console.log(`[Received] Wisp v${payload.majorWispVersion}.${payload.minorWispVersion}`);
+    if (payload.extensions.length > 0) {
+        console.log('Extensions:');
+        payload.extensions.forEach((ext) => {
+            console.log(`- ${ext.id}`);
+        });
+    } else {
+        console.log('Extensions: (none)');
+    }
 });
 
-// Get Wisp version
-console.log(`Wisp version: ${mit.getVersion()}`);
+mit.onInfoFinished((info) => {
+    // Get Wisp version
+    const version = info.getVersion();
+    console.log(`Wisp version: v${version.major}.${version.minor}`);
 
-// Get extensions
-console.log(`Extensions: ${mit.getExtensions()}`);
+    // Get extensions
+    const extensions = info.getExtensions();
+    console.log(`Extensions: ${JSON.stringify(extensions.map(e => ({ id: e.id, payloadLength: e.payloadLength })))}`);
 
-// Is password auth required
-console.log(`Password auth: ${mit.isPasswordAuthRequired()}`);
+    // Is password auth required
+    console.log(`Password auth required: ${info.isPasswordAuthRequired()}`);
 
-// Is key auth required
-console.log(`Key auth: ${mit.isKeyAuthRequired()}`);
+    // Is key auth required
+    console.log(`Key auth required: ${info.isKeyAuthRequired()}`);
 
-// Is UDP supported
-console.log(`UDP supported: ${mit.isUDPSupported()}`);
+    // Is UDP supported
+    console.log(`UDP supported: ${info.isUDPSupported()}`);
 
-// Is MOTD extension
-console.log(`MOTD supported: ${mit.isMOTD()}`);
+    // Is MOTD available
+    console.log(`MOTD available: ${info.isMOTD()}`);
 
-// Get MOTD
-console.log(`MOTD: ${mit.getMOTD()}`);
+    // Get MOTD
+    if (info.isMOTD()) {
+        console.log(`MOTD: ${info.getMOTD()}`);
+    }
 
-// Is Stream Open Confirmation supported
-console.log(`Stream Open Confirmation supported: ${mit.isStreamOpenConfirmationSupported()}`);
+    // Is Stream Open Confirmation supported
+    console.log(`Stream Open Confirmation supported: ${info.isStreamOpenConfirmationSupported()}`);
+});
 
 // On password auth
 mit.onPasswordAuth((username, password) => {

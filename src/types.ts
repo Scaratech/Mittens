@@ -132,7 +132,7 @@ export interface Packet {
 };
 
 export type ProxyHeader = 'X-Forwarded-For' | 'X-Real-IP' | 'CF-Connecting-IP';
-export type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | 'blocked' | 'wispguardBlocked' | '*';
+export type LogActions = 'connection' | 'error' | 'CONNECT' | 'DATA' | 'INFO' | 'blocked' | 'wispguardBlocked' | 'passwordAuth' | 'keyAuth' | '*';
 export type LogType = 'log' | 'json';
 export type FilterType = 'whitelist' | 'blacklist';
 

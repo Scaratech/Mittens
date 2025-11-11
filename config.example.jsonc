@@ -18,6 +18,9 @@
             "DATA", // DATA packets (Length and base64 encoded data)
             "blocked", // Client tried to access something blocked by the filter rules
             "wispguardBlocked", // Client blocked by wispguard (IP, UA, or Host)
+            "INFO", // INFO packets
+            "passwordAuth", // Password authentication attempts
+            "keyAuth", // Key authentication attempts
             "*" // Log ALL traffic, actions, raw packets, parsed packets, complete request objects, and more
         ]
     },

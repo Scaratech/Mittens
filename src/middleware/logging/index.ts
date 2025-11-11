@@ -519,7 +519,250 @@ export class Logger implements LoggerInstance {
             this.log(fullEntry);
         }
     }
+
+    public logInfoPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer, direction: 'sent' | 'received' = 'received'): void {
+        const payload = packet.payload as any;
+
+        const extensions: any = {
+            motd: false,
+            motdMessage: '',
+            passwordAuth: false,
+            keyAuth: false,
+            udp: false,
+            streamOpenConfirmation: false
+        };
+
+        for (const ext of payload.extensions) {
+            switch (ext.id) {
+                case 0x01: // UDP
+                    extensions.udp = true;
+                    break;
+                case 0x02: // Password Auth
+                    extensions.passwordAuth = true;
+                    break;
+                case 0x03: // Key Auth
+                    extensions.keyAuth = true;
+                    break;
+                case 0x04: // Server MOTD
+                    extensions.motd = true;
+                    if (ext.motd) {
+                        extensions.motdMessage = ext.motd;
+                    }
+                    break;
+                case 0x05: // Stream Open Confirmation
+                    extensions.streamOpenConfirmation = true;
+                    break;
+            }
+        }
+
+        const entry: LogEntry = {
+            timestamp: new Date().toISOString(),
+            action: 'INFO',
+            streamId: packet.streamId
+        };
+
+        if (req && this.config.logging.log_ip) {
+            entry.ip = getIP(this.config, req);
+        }
+
+        entry.details = {
+            direction: direction,
+            wispVersion: `${payload.majorWispVersion}.${payload.minorWispVersion}`,
+            extensions: extensions
+        };
+
+        this.log(entry);
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*',
+                streamId: packet.streamId
+            };
+
+            if (req && this.config.logging.log_ip) {
+                fullEntry.ip = getIP(this.config, req);
+            }
+
+            fullEntry.details = {
+                event: `INFO_packet_${direction}`,
+                direction: direction,
+                wispVersion: `${payload.majorWispVersion}.${payload.minorWispVersion}`,
+                packet: {
+                    type: PacketType[packet.type],
+                    typeCode: packet.type,
+                    streamId: packet.streamId,
+                    payload: payload
+                },
+                extensions: payload.extensions.map((ext: any) => ({
+                    id: ext.id,
+                    payloadLength: ext.payloadLength,
+                    ...ext
+                })),
+                rawPacket: rawPacket ? {
+                    hex: rawPacket.toString('hex'),
+                    base64: rawPacket.toString('base64'),
+                    length: rawPacket.length,
+                    bytes: Array.from(rawPacket)
+                } : undefined
+            };
+
+            this.log(fullEntry);
+        }
+    }
+
+    public logPasswordAuth(username: string, password: string, req?: IncomingMessage): void {
+        const entry: LogEntry = {
+            timestamp: new Date().toISOString(),
+            action: 'passwordAuth'
+        };
+
+        if (req && this.config.logging.log_ip) {
+            entry.ip = getIP(this.config, req);
+        }
+
+        entry.details = {
+            username: username,
+            passwordLength: password.length
+        };
+
+        this.log(entry);
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*'
+            };
+
+            if (req && this.config.logging.log_ip) {
+                fullEntry.ip = getIP(this.config, req);
+            }
+
+            fullEntry.details = {
+                event: 'password_authentication',
+                username: username,
+                password: password,
+                passwordLength: password.length
+            };
+
+            this.log(fullEntry);
+        }
+    }
+
+    public logKeyAuthServer(algorithms: number, challenge: string, req?: IncomingMessage): void {
+        const entry: LogEntry = {
+            timestamp: new Date().toISOString(),
+            action: 'keyAuth'
+        };
+
+        if (req && this.config.logging.log_ip) {
+            entry.ip = getIP(this.config, req);
+        }
+
+        entry.details = {
+            type: 'challenge_received',
+            supportedAlgorithms: algorithms,
+            algorithmsBitmask: `0b${algorithms.toString(2).padStart(8, '0')}`,
+            challengeLength: challenge.length
+        };
+
+        this.log(entry);
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*'
+            };
+
+            if (req && this.config.logging.log_ip) {
+                fullEntry.ip = getIP(this.config, req);
+            }
+
+            fullEntry.details = {
+                event: 'key_auth_challenge_received',
+                supportedAlgorithms: algorithms,
+                algorithmsBitmask: `0b${algorithms.toString(2).padStart(8, '0')}`,
+                challengeData: challenge,
+                challengeLength: challenge.length
+            };
+
+            this.log(fullEntry);
+        }
+    }
+
+    public logKeyAuthClient(algorithm: number, publicKeyHash: string, signature: string, req?: IncomingMessage): void {
+        const entry: LogEntry = {
+            timestamp: new Date().toISOString(),
+            action: 'keyAuth'
+        };
+
+        if (req && this.config.logging.log_ip) {
+            entry.ip = getIP(this.config, req);
+        }
+
+        entry.details = {
+            type: 'response_sent',
+            selectedAlgorithm: algorithm,
+            algorithmBitmask: `0b${algorithm.toString(2).padStart(8, '0')}`,
+            publicKeyHashLength: publicKeyHash.length,
+            signatureLength: signature.length
+        };
+
+        this.log(entry);
+
+        if (this.shouldLog('*')) {
+            const fullEntry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*'
+            };
+
+            if (req && this.config.logging.log_ip) {
+                fullEntry.ip = getIP(this.config, req);
+            }
+
+            fullEntry.details = {
+                event: 'key_auth_response_sent',
+                selectedAlgorithm: algorithm,
+                algorithmBitmask: `0b${algorithm.toString(2).padStart(8, '0')}`,
+                publicKeyHash: publicKeyHash,
+                publicKeyHashLength: publicKeyHash.length,
+                challengeSignature: signature,
+                signatureLength: signature.length
+            };
+
+            this.log(fullEntry);
+        }
+    }
+
+    public logWispVersion(version: { major: number; minor: number }, extensions: any[], req?: IncomingMessage): void {
+        if (this.shouldLog('*')) {
+            const entry: LogEntry = {
+                timestamp: new Date().toISOString(),
+                action: '*'
+            };
+
+            if (req && this.config.logging.log_ip) {
+                entry.ip = getIP(this.config, req);
+            }
+
+            entry.details = {
+                event: 'wisp_version_detected',
+                version: `${version.major}.${version.minor}`,
+                majorVersion: version.major,
+                minorVersion: version.minor,
+                extensions: extensions.map((ext: any) => ({
+                    id: ext.id,
+                    payloadLength: ext.payloadLength,
+                    details: ext
+                })),
+                extensionCount: extensions.length
+            };
+
+            this.log(entry);
+        }
+    }
 }
+
 
 export function createLogger(config: Config): Logger {
     return new Logger(config);

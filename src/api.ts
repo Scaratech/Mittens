@@ -34,6 +34,9 @@ export class Mittens {
     private dataCallbacks: PacketCallback[] = [];
     private closeCallbacks: PacketCallback[] = [];
 
+
+    private que: Map<number, Promise<void>> = new Map();
+
     constructor(config: Config) {
         this.config = config;
 
@@ -51,7 +54,11 @@ export class Mittens {
     public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
     public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
-    private async processPacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): Promise<Packet | null> {
+    private async processPacket(
+        packet: Packet, 
+        req?: IncomingMessage, 
+        rawPacket?: Buffer
+    ): Promise<Packet | null> {
         let currentPacket = packet;
 
         if (currentPacket.type === PacketType.CONNECT) {
@@ -60,7 +67,12 @@ export class Mittens {
 
             if (!filterResult.allowed) {
                 if (this.logger) {
-                    this.logger.logBlocked(connectPayload, req, filterResult.reason as any, currentPacket.streamId);
+                    this.logger.logBlocked(
+                        connectPayload, 
+                        req, 
+                        filterResult.reason as any, 
+                        currentPacket.streamId
+                    );
                 }
 
                 for (const callback of this.blockedCallbacks) {
@@ -152,7 +164,9 @@ export class Mittens {
         const ip = this.config.logging.log_ip ? getIP(this.config, req) : '';
         const ua = req.headers['user-agent'] || 'unknown';
 
-        for (const callback of this.connectionCallbacks) await callback(ip, ua, req);
+        for (const callback of this.connectionCallbacks) {
+            await callback(ip, ua, req);
+        }
 
         const wss = new WebSocketServer({
             noServer: true
@@ -182,33 +196,48 @@ export class Mittens {
                 try {
                     const rawBuffer = msg as Buffer;
                     const packet = rawToFormatted(rawBuffer);
-                    const processedPacket = await this.processPacket(packet, req, rawBuffer);
+                    const streamId = packet.streamId;
+                    const previousPromise = this.que.get(streamId) || Promise.resolve();
 
-                    if (processedPacket === null) {
-                        const closePacket = constructFormatted({
-                            type: PacketType.CLOSE,
-                            streamId: packet.streamId,
-                            payload: {
-                                reason: 0x48
-                            } as ClosePacket
-                        });
+                    const currentPromise = previousPromise.then(async () => {
+                        const processedPacket = await this.processPacket(packet, req, rawBuffer);
 
-                        const closeRaw = formattedToRaw(closePacket);
-                        
-                        if (clientWs.readyState === WebSocket.OPEN) {
-                            clientWs.send(closeRaw);
+                        if (processedPacket === null) {
+                            const closePacket = constructFormatted({
+                                type: PacketType.CLOSE,
+                                streamId: packet.streamId,
+                                payload: {
+                                    reason: 0x48
+                                } as ClosePacket
+                            });
+
+                            const closeRaw = formattedToRaw(closePacket);
+                            
+                            if (clientWs.readyState === WebSocket.OPEN) {
+                                clientWs.send(closeRaw);
+                            }
+                            
+                            return;
                         }
-                        
-                        return;
-                    }
 
-                    const raw = formattedToRaw(processedPacket);
+                        const raw = formattedToRaw(processedPacket);
 
-                    if (wispWs.readyState === WebSocket.OPEN) {
-                        wispWs.send(raw);
+                        if (wispWs.readyState === WebSocket.OPEN) {
+                            wispWs.send(raw);
+                        }
+                    }).catch((err) => {
+                        console.error(`[Mittens] Error forwarding packet (Client -> Wisp):`, (err as Error).message);
+                    });
+
+                    this.que.set(streamId, currentPromise);
+
+                    if (packet.type === PacketType.CLOSE) {
+                        currentPromise.finally(() => {
+                            this.que.delete(streamId);
+                        });
                     }
                 } catch (err) {
-                    console.error(`[Mittens] Error forwarding packet (Client -> Wisp):`, (err as Error).message);
+                    console.error(`[Mittens] Error handling packet:`, (err as Error).message);
                 }
             });
 

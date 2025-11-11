@@ -1,74 +1,48 @@
 import { ConnectType, type Config } from "../../types.js";
 import ipaddr from 'ipaddr.js';
-import { Resolver } from 'node:dns/promises';
 
-const resolver = new Resolver();
-resolver.setServers(['1.1.1.1']);
-
-export function isIPv4(host: string): boolean {
-    try {
-        return ipaddr.IPv4.isValid(host);
-    } catch {
-        return false;
-    }
+export function isIPv4(hostOrIp: string): boolean {
+    return ipaddr.IPv4.isValid(hostOrIp);
 }
 
-export function isIPv6(host: string): boolean {
-    try {
-        return ipaddr.IPv6.isValid(host);
-    } catch {
-        return false;
-    }
+export function isIPv6(hostOrIp: string): boolean {
+    return ipaddr.IPv6.isValid(hostOrIp);
 }
 
-export function isIP(host: string): boolean {
-    return ipaddr.isValid(host);
+export function isIP(hostOrIp: string): boolean {
+    return ipaddr.isValid(hostOrIp);
 }
 
-export function isPrivateIP(host: string): boolean {
-    if (!isIP(host)) return false;
+export function isPrivate(hostOrIp: string): boolean {
+    if (!ipaddr.isValid(hostOrIp)) return false;
 
-    try {
-        const addr = ipaddr.parse(host);
-        return addr.range() === 'private';
-    } catch {
-        return false;
-    }
-}
+    const addr = ipaddr.parse(hostOrIp);
+    const range = addr.range();
+    let ranges = ['broadcast', 'linkLocal', 'carrierGradeNat', 'private', 'reserved'];
 
-export async function isLoopbackIP(host: string): Promise<boolean> {
-    if (!host) return false;
-
-    const lower = host.toLowerCase();
-    if (lower === 'localhost') return true;
-    if (lower.endsWith('.local')) return true;
-    if (!lower.includes('.')) return true;
-
-    if (isIP(host)) {
-        try {
-            const addr = ipaddr.parse(host);
-            const r = addr.range();
-
-            if (r === 'loopback') return true;
-            if (host === '0.0.0.0') return true;
-
-            return false;
-
-        } catch {
-            return false;
-        }
-    }
-
-    try {
-        const addrs = await resolver.resolve(host);
-        return !(addrs && addrs.length > 0) ? true : false;
-    } catch {
+    if (ranges.includes(range)) {
         return true;
+    } else {
+        return false;
     }
 }
 
-export function isDomain(host: string): boolean {
-    return !isIP(host);
+export function isLoopback(hostOrIp: string): boolean {
+    if (!ipaddr.isValid(hostOrIp)) return false;
+
+    const addr = ipaddr.parse(hostOrIp);
+    const range = addr.range();
+    let ranges = ['loopback', 'multicast', 'unspecified'];
+
+    if (ranges.includes(range)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+export function isDomain(hostOrIp: string): boolean {
+    return !isIP(hostOrIp);
 }
 
 export function isPortAllowed(port: number, config: Config): boolean {

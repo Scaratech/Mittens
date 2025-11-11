@@ -20,7 +20,6 @@ export class Mittens {
     private packetCallbacks: PacketCallback[] = [];
     private connectCallbacks: PacketCallback[] = [];
     private dataCallbacks: PacketCallback[] = [];
-    private continueCallbacks: PacketCallback[] = [];
     private closeCallbacks: PacketCallback[] = [];
 
     constructor(config: Config) { this.config = config; }
@@ -29,7 +28,6 @@ export class Mittens {
     public onPacket(callback: PacketCallback) { this.packetCallbacks.push(callback); }
     public onConnectPacket(callback: PacketCallback) { this.connectCallbacks.push(callback); }
     public onDataPacket(callback: PacketCallback) { this.dataCallbacks.push(callback); }
-    public onContinuePacket(callback: PacketCallback) { this.continueCallbacks.push(callback); }
     public onClosePacket(callback: PacketCallback) { this.closeCallbacks.push(callback); }
 
     private async processPacket(packet: Packet): Promise<Packet> {
@@ -43,9 +41,6 @@ export class Mittens {
                 break;
             case PacketType.DATA:
                 typeCallbacks = this.dataCallbacks;
-                break;
-            case PacketType.CONTINUE:
-                typeCallbacks = this.continueCallbacks;
                 break;
             case PacketType.CLOSE:
                 typeCallbacks = this.closeCallbacks;

@@ -1,7 +1,6 @@
 import type { 
     ConnectPacket,
     DataPacket,
-    ContinuePacket,
     ClosePacket,
 } from "../src/index.js";
 import { Mittens, generateConfig, CLOSE_REASONS } from "../src/index.js"; 
@@ -34,13 +33,6 @@ mit.onDataPacket((packet) => {
     const payload = packet.payload as DataPacket;
     console.log('Packet data:');
     console.log(payload.payload);
-});
-
-// On CONTINUE packets
-mit.onContinuePacket((packet) => {
-    // Demo: Log payload
-    const payload = packet.payload as ContinuePacket;
-    console.log(`Remaining: ${payload.remaining}`);
 });
 
 // On CLOSE packets

@@ -81,7 +81,7 @@ const mit = new Mittens(generateConfig({
 ## CLI
 Easily spin up a Mittens server
 > [!IMPORTANT]
-> The source code for the mittens-cli is located in a [different repository](https://github.com/scaratech/mittens)!
+> The source code for the mittens-cli is located in a [different repository](https://github.com/scaratech/mittens-cli)!
 ```sh
 $ pnpm dlx @scaratech/mittens-cli -c ./path_to_config.json
 ```

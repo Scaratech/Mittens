@@ -7,21 +7,21 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 
 export class Logger implements LoggerInstance {
-    private config: Config;
-    private stream: fs.FileHandle | null = null;
-    private current: string | null = null;
-    private queue: LogEntry[] = [];
-    private isWriting: boolean = false;
-    private allLogs: LogEntry[] = [];
+    #config: Config;
+    #stream: fs.FileHandle | null = null;
+    #current: string | null = null;
+    #queue: LogEntry[] = [];
+    #isWriting: boolean = false;
+    #allLogs: LogEntry[] = [];
 
     constructor(config: Config) {
-        this.config = config;
-        this.initalize();
+        this.#config = config;
+        this.#initalize();
     }
 
-    private async initalize(): Promise<void> {
-        if (!this.config.logging.enabled) return;
-        const dir = this.config.logging.log_dir || './logs';
+    async #initalize(): Promise<void> {
+        if (!this.#config.logging.enabled) return;
+        const dir = this.#config.logging.log_dir || './logs';
         
         try {
             await fs.mkdir(dir, { recursive: true });
@@ -31,63 +31,63 @@ export class Logger implements LoggerInstance {
         }
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-        const extension = this.config.logging.log_type === 'json' ? 'json' : 'log';
-        this.current = path.join(dir, `mittens-${timestamp}.${extension}`);
+        const extension = this.#config.logging.log_type === 'json' ? 'json' : 'log';
+        this.#current = path.join(dir, `mittens-${timestamp}.${extension}`);
 
         try {
-            this.stream = await fs.open(this.current, 'a');
+            this.#stream = await fs.open(this.#current, 'a');
         } catch (err) {
             console.error(`[Mittens] Failed to open log file:`, err);
         }
     }
 
-    private shouldLog(action: string): boolean {
-        if (!this.config.logging.enabled) return false;     
-        const logActions = this.config.logging.log_actions || [];  
+    #shouldLog(action: string): boolean {
+        if (!this.#config.logging.enabled) return false;     
+        const logActions = this.#config.logging.log_actions || [];  
         if (logActions.includes('*')) return true;
         return logActions.includes(action as any);
     }
 
-    private async writeToFile(content: string): Promise<void> {
-        if (!this.stream) return;
+    async #writeToFile(content: string): Promise<void> {
+        if (!this.#stream) return;
 
         try {
-            await this.stream.write(content + '\n');
+            await this.#stream.write(content + '\n');
         } catch (err) {
             console.error(`[Mittens] Failed to write to log file:`, err);
         }
     }
 
-    private async processQueue(): Promise<void> {
-        if (this.isWriting || this.queue.length === 0) return;
+    async #processQueue(): Promise<void> {
+        if (this.#isWriting || this.#queue.length === 0) return;
         
-        this.isWriting = true;
+        this.#isWriting = true;
 
-        while (this.queue.length > 0) {
-            const entry = this.queue.shift()!;
+        while (this.#queue.length > 0) {
+            const entry = this.#queue.shift()!;
             
-            if (this.config.logging.log_type === 'json') {
-                this.allLogs.push(entry);
-                const formatted = JSON.stringify({ logs: this.allLogs });
+            if (this.#config.logging.log_type === 'json') {
+                this.#allLogs.push(entry);
+                const formatted = JSON.stringify({ logs: this.#allLogs });
                 
-                if (this.stream) {
-                    await this.stream.close();
-                    this.stream = await fs.open(this.current!, 'w');
-                    await this.stream.write(formatted);
+                if (this.#stream) {
+                    await this.#stream.close();
+                    this.#stream = await fs.open(this.#current!, 'w');
+                    await this.#stream.write(formatted);
                 }
             } else {
-                const formatted = this.formatLogEntry(entry);
-                await this.writeToFile(formatted);
+                const formatted = this.#formatLogEntry(entry);
+                await this.#writeToFile(formatted);
             }
         }
 
-        this.isWriting = false;
+        this.#isWriting = false;
     }
 
-    private formatLogEntry(entry: LogEntry): string {
-        if (this.config.logging.log_type === 'json') {
-            this.allLogs.push(entry);
-            return JSON.stringify({ logs: this.allLogs });
+    #formatLogEntry(entry: LogEntry): string {
+        if (this.#config.logging.log_type === 'json') {
+            this.#allLogs.push(entry);
+            return JSON.stringify({ logs: this.#allLogs });
         }
 
         let logLine = `[${entry.timestamp}] [${entry.action}]`;
@@ -111,20 +111,20 @@ export class Logger implements LoggerInstance {
     }
 
     public log(entry: LogEntry): void {
-        if (!this.shouldLog(entry.action)) return;
+        if (!this.#shouldLog(entry.action)) return;
 
-        this.queue.push(entry);
-        this.processQueue();
+        this.#queue.push(entry);
+        this.#processQueue();
     }
 
     public async close(): Promise<void> {
-        while (this.queue.length > 0) {
+        while (this.#queue.length > 0) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        if (this.stream) {
-            await this.stream.close();
-            this.stream = null;
+        if (this.#stream) {
+            await this.#stream.close();
+            this.#stream = null;
         }
     }
 
@@ -134,8 +134,8 @@ export class Logger implements LoggerInstance {
             action: 'connection'
         };
 
-        if (this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -145,14 +145,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -181,8 +181,8 @@ export class Logger implements LoggerInstance {
             action: 'connection'
         };
 
-        if (this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -191,14 +191,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -226,8 +226,8 @@ export class Logger implements LoggerInstance {
             streamId: packet.streamId
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -267,8 +267,8 @@ export class Logger implements LoggerInstance {
             streamId: packet.streamId
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -279,15 +279,15 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: packet.streamId
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -319,8 +319,8 @@ export class Logger implements LoggerInstance {
             streamId: packet.streamId
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         const base64Data = payload.payload || '';
@@ -334,15 +334,15 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: packet.streamId
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -374,15 +374,15 @@ export class Logger implements LoggerInstance {
     public logContinuePacket(packet: Packet, req?: IncomingMessage, rawPacket?: Buffer): void {
         const payload = packet.payload as any;
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: packet.streamId
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -415,8 +415,8 @@ export class Logger implements LoggerInstance {
             streamId: packet.streamId
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -426,15 +426,15 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: packet.streamId
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -469,8 +469,8 @@ export class Logger implements LoggerInstance {
             streamId: streamId ?? (packet ? (packet as any).streamId : undefined)
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -483,14 +483,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: entry.streamId
             };
 
-            if (req && this.config.logging.log_ip) fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) fullEntry.ip = getIP(this.#config, req);
 
             fullEntry.details = {
                 event: 'blocked_connection',
@@ -561,8 +561,8 @@ export class Logger implements LoggerInstance {
             streamId: packet.streamId
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -573,15 +573,15 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*',
                 streamId: packet.streamId
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -617,8 +617,8 @@ export class Logger implements LoggerInstance {
             action: 'passwordAuth'
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -628,14 +628,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -655,8 +655,8 @@ export class Logger implements LoggerInstance {
             action: 'keyAuth'
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -668,14 +668,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -695,8 +695,8 @@ export class Logger implements LoggerInstance {
             action: 'keyAuth'
         };
 
-        if (req && this.config.logging.log_ip) {
-            entry.ip = getIP(this.config, req);
+        if (req && this.#config.logging.log_ip) {
+            entry.ip = getIP(this.#config, req);
         }
 
         entry.details = {
@@ -709,14 +709,14 @@ export class Logger implements LoggerInstance {
 
         this.log(entry);
 
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const fullEntry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (req && this.config.logging.log_ip) {
-                fullEntry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                fullEntry.ip = getIP(this.#config, req);
             }
 
             fullEntry.details = {
@@ -734,14 +734,14 @@ export class Logger implements LoggerInstance {
     }
 
     public logWispVersion(version: { major: number; minor: number }, extensions: any[], req?: IncomingMessage): void {
-        if (this.shouldLog('*')) {
+        if (this.#shouldLog('*')) {
             const entry: LogEntry = {
                 timestamp: new Date().toISOString(),
                 action: '*'
             };
 
-            if (req && this.config.logging.log_ip) {
-                entry.ip = getIP(this.config, req);
+            if (req && this.#config.logging.log_ip) {
+                entry.ip = getIP(this.#config, req);
             }
 
             entry.details = {
